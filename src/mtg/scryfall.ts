@@ -27,7 +27,7 @@ const escapeText = (text: string): string => text.replace(/\n/g, '\\n');
  * @param {RequestQuery} queryTerm search data
  * @returns {Promise<ScryfallCardSelection>}
  */
-export const searchMTGCard = async (
+export const getMTGCard = async (
   queryTerm: RequestQuery,
 ): Promise<ScryfallCardSelection> => {
   try {
@@ -43,7 +43,7 @@ export const searchMTGCard = async (
     );
 
     if (request.status !== 200) {
-      throw `(searchMTGCard): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`;
+      throw `(getMTGCard): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`;
     }
 
     const response: ScryfallSearch | ScryfallError = await request.json();
@@ -52,7 +52,7 @@ export const searchMTGCard = async (
       const { details, warnings } = response as ScryfallError;
       const errMsg = warnings ? warnings.join('\n') : details;
 
-      throw `(searchMTGCard): \n ${errMsg}`;
+      throw `(getMTGCard): \n ${errMsg}`;
     }
 
     const cards = (response as ScryfallSearch).data.map(
