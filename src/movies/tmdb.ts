@@ -36,25 +36,34 @@ const tmdbFetch = async <T>(
   endpoint: string,
   params: Record<string, string | number> = {},
 ): Promise<T> => {
-  const apiKey = getApiKey();
-  const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
-  url.searchParams.set('api_key', apiKey);
+  try {
+    const apiKey = getApiKey();
+    const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
+    url.searchParams.set('api_key', apiKey);
 
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null) {
-      url.searchParams.set(key, String(value));
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, String(value));
+      }
     }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status !== 200) {
+      const errorResp = await response.text();
+
+      throw `[fetch]: ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
+    }
+
+    return response.json() as Promise<T>;
+  } catch (error) {
+    console.log(`[tmdbFetch] - ${error}`);
+    throw `[tmdbFetch] - ${error}`;
   }
-
-  const response = await fetch(url.toString());
-
-  if (!response.ok) {
-    throw new Error(
-      `TMDB API error: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return response.json() as Promise<T>;
 };
 
 /**
@@ -135,40 +144,45 @@ export const queryMovie = async (
   title: string,
   options: TMDBQueryOptions = {},
 ): Promise<MovieData | null> => {
-  // Search for the movie
-  const searchResults = await searchMovie(title, options);
+  try {
+    // Search for the movie
+    const searchResults = await searchMovie(title, options);
 
-  if (searchResults.results.length === 0) {
-    return null;
+    if (searchResults.results.length === 0) {
+      return null;
+    }
+
+    // Get the first (most relevant) result
+    const movieId = searchResults.results[0].id;
+
+    // Fetch detailed information with credits
+    const details = await getMovieDetails(movieId, options.language);
+
+    // Extract director from crew
+    const director =
+      details.credits?.crew.find(member => member.job === 'Director')?.name ??
+      null;
+
+    // Extract top cast members (limit to 10)
+    const cast =
+      details.credits?.cast.slice(0, 10).map(member => member.name) ?? [];
+
+    return {
+      id: details.id,
+      title: details.title,
+      releaseDate: details.release_date,
+      director,
+      cast,
+      genres: details.genres.map(genre => genre.name),
+      runtime: details.runtime,
+      overview: details.overview,
+      rating: details.vote_average,
+      posterUrl: buildPosterUrl(details.poster_path),
+    };
+  } catch (error) {
+    console.log(`[queryMovie] - ${error}`);
+    throw `[queryMovie] - ${error}`;
   }
-
-  // Get the first (most relevant) result
-  const movieId = searchResults.results[0].id;
-
-  // Fetch detailed information with credits
-  const details = await getMovieDetails(movieId, options.language);
-
-  // Extract director from crew
-  const director =
-    details.credits?.crew.find(member => member.job === 'Director')?.name ??
-    null;
-
-  // Extract top cast members (limit to 10)
-  const cast =
-    details.credits?.cast.slice(0, 10).map(member => member.name) ?? [];
-
-  return {
-    id: details.id,
-    title: details.title,
-    releaseDate: details.release_date,
-    director,
-    cast,
-    genres: details.genres.map(genre => genre.name),
-    runtime: details.runtime,
-    overview: details.overview,
-    rating: details.vote_average,
-    posterUrl: buildPosterUrl(details.poster_path),
-  };
 };
 
 /**
@@ -183,26 +197,31 @@ export const queryMovieById = async (
   movieId: number,
   language = 'en-US',
 ): Promise<MovieData> => {
-  const details = await getMovieDetails(movieId, language);
+  try {
+    const details = await getMovieDetails(movieId, language);
 
-  const director =
-    details.credits?.crew.find(member => member.job === 'Director')?.name ??
-    null;
-  const cast =
-    details.credits?.cast.slice(0, 10).map(member => member.name) ?? [];
+    const director =
+      details.credits?.crew.find(member => member.job === 'Director')?.name ??
+      null;
+    const cast =
+      details.credits?.cast.slice(0, 10).map(member => member.name) ?? [];
 
-  return {
-    id: details.id,
-    title: details.title,
-    releaseDate: details.release_date,
-    director,
-    cast,
-    genres: details.genres.map(genre => genre.name),
-    runtime: details.runtime,
-    overview: details.overview,
-    rating: details.vote_average,
-    posterUrl: buildPosterUrl(details.poster_path),
-  };
+    return {
+      id: details.id,
+      title: details.title,
+      releaseDate: details.release_date,
+      director,
+      cast,
+      genres: details.genres.map(genre => genre.name),
+      runtime: details.runtime,
+      overview: details.overview,
+      rating: details.vote_average,
+      posterUrl: buildPosterUrl(details.poster_path),
+    };
+  } catch (error) {
+    console.log(`[queryMovieById] - ${error}`);
+    throw `[queryMovieById] - ${error}`;
+  }
 };
 
 /**
@@ -224,42 +243,47 @@ export const queryTVShow = async (
   title: string,
   options: TMDBQueryOptions = {},
 ): Promise<TVShowData | null> => {
-  // Search for the TV show
-  const searchResults = await searchTVShow(title, options);
+  try {
+    // Search for the TV show
+    const searchResults = await searchTVShow(title, options);
 
-  if (searchResults.results.length === 0) {
-    return null;
+    if (searchResults.results.length === 0) {
+      return null;
+    }
+
+    // Get the first (most relevant) result
+    const seriesId = searchResults.results[0].id;
+
+    // Fetch detailed information with aggregate credits
+    const details = await getTVShowDetails(seriesId, options.language);
+
+    // Extract creators
+    const creators = details.created_by.map(creator => creator.name);
+
+    // Extract top cast members (limit to 10)
+    const cast =
+      details.aggregate_credits?.cast.slice(0, 10).map(member => member.name) ??
+      [];
+
+    return {
+      id: details.id,
+      title: details.name,
+      firstAirDate: details.first_air_date,
+      lastAirDate: details.last_air_date,
+      creators,
+      cast,
+      genres: details.genres.map(genre => genre.name),
+      seasonCount: details.number_of_seasons,
+      episodeCount: details.number_of_episodes,
+      overview: details.overview,
+      rating: details.vote_average,
+      status: details.status,
+      posterUrl: buildPosterUrl(details.poster_path),
+    };
+  } catch (error) {
+    console.log(`[queryTVShow] - ${error}`);
+    throw `[queryTVShow] - ${error}`;
   }
-
-  // Get the first (most relevant) result
-  const seriesId = searchResults.results[0].id;
-
-  // Fetch detailed information with aggregate credits
-  const details = await getTVShowDetails(seriesId, options.language);
-
-  // Extract creators
-  const creators = details.created_by.map(creator => creator.name);
-
-  // Extract top cast members (limit to 10)
-  const cast =
-    details.aggregate_credits?.cast.slice(0, 10).map(member => member.name) ??
-    [];
-
-  return {
-    id: details.id,
-    title: details.name,
-    firstAirDate: details.first_air_date,
-    lastAirDate: details.last_air_date,
-    creators,
-    cast,
-    genres: details.genres.map(genre => genre.name),
-    seasonCount: details.number_of_seasons,
-    episodeCount: details.number_of_episodes,
-    overview: details.overview,
-    rating: details.vote_average,
-    status: details.status,
-    posterUrl: buildPosterUrl(details.poster_path),
-  };
 };
 
 /**
@@ -274,28 +298,33 @@ export const queryTVShowById = async (
   seriesId: number,
   language = 'en-US',
 ): Promise<TVShowData> => {
-  const details = await getTVShowDetails(seriesId, language);
+  try {
+    const details = await getTVShowDetails(seriesId, language);
 
-  const creators = details.created_by.map(creator => creator.name);
-  const cast =
-    details.aggregate_credits?.cast.slice(0, 10).map(member => member.name) ??
-    [];
+    const creators = details.created_by.map(creator => creator.name);
+    const cast =
+      details.aggregate_credits?.cast.slice(0, 10).map(member => member.name) ??
+      [];
 
-  return {
-    id: details.id,
-    title: details.name,
-    firstAirDate: details.first_air_date,
-    lastAirDate: details.last_air_date,
-    creators,
-    cast,
-    genres: details.genres.map(genre => genre.name),
-    seasonCount: details.number_of_seasons,
-    episodeCount: details.number_of_episodes,
-    overview: details.overview,
-    rating: details.vote_average,
-    status: details.status,
-    posterUrl: buildPosterUrl(details.poster_path),
-  };
+    return {
+      id: details.id,
+      title: details.name,
+      firstAirDate: details.first_air_date,
+      lastAirDate: details.last_air_date,
+      creators,
+      cast,
+      genres: details.genres.map(genre => genre.name),
+      seasonCount: details.number_of_seasons,
+      episodeCount: details.number_of_episodes,
+      overview: details.overview,
+      rating: details.vote_average,
+      status: details.status,
+      posterUrl: buildPosterUrl(details.poster_path),
+    };
+  } catch (error) {
+    console.log(`[queryTVShowById] - ${error}`);
+    throw `[queryTVShowById] - ${error}`;
+  }
 };
 
 /**
@@ -321,20 +350,25 @@ export const searchMovies = async (
   totalPages: number;
   page: number;
 }> => {
-  const response = await searchMovie(query, options);
+  try {
+    const response = await searchMovie(query, options);
 
-  return {
-    results: response.results.map(movie => ({
-      id: movie.id,
-      title: movie.title,
-      releaseDate: movie.release_date,
-      overview: movie.overview,
-      posterUrl: buildPosterUrl(movie.poster_path),
-    })),
-    totalResults: response.total_results,
-    totalPages: response.total_pages,
-    page: response.page,
-  };
+    return {
+      results: response.results.map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        releaseDate: movie.release_date,
+        overview: movie.overview,
+        posterUrl: buildPosterUrl(movie.poster_path),
+      })),
+      totalResults: response.total_results,
+      totalPages: response.total_pages,
+      page: response.page,
+    };
+  } catch (error) {
+    console.log(`[searchMovies] - ${error}`);
+    throw `[searchMovies] - ${error}`;
+  }
 };
 
 /**
@@ -360,18 +394,23 @@ export const searchTVShows = async (
   totalPages: number;
   page: number;
 }> => {
-  const response = await searchTVShow(query, options);
+  try {
+    const response = await searchTVShow(query, options);
 
-  return {
-    results: response.results.map(show => ({
-      id: show.id,
-      title: show.name,
-      firstAirDate: show.first_air_date,
-      overview: show.overview,
-      posterUrl: buildPosterUrl(show.poster_path),
-    })),
-    totalResults: response.total_results,
-    totalPages: response.total_pages,
-    page: response.page,
-  };
+    return {
+      results: response.results.map(show => ({
+        id: show.id,
+        title: show.name,
+        firstAirDate: show.first_air_date,
+        overview: show.overview,
+        posterUrl: buildPosterUrl(show.poster_path),
+      })),
+      totalResults: response.total_results,
+      totalPages: response.total_pages,
+      page: response.page,
+    };
+  } catch (error) {
+    console.log(`[searchTVShows] - ${error}`);
+    throw `[searchTVShows] - ${error}`;
+  }
 };
