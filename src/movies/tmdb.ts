@@ -17,7 +17,7 @@ const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 const getApiKey = (): string => {
   const key = process.env.TMDB_KEY;
   if (!key) {
-    throw new Error('TMDB_KEY environment variable is not set');
+    throw `(getApiKey): TMDB_KEY environment variable is not set`;
   }
   return key;
 };
@@ -56,7 +56,7 @@ const tmdbFetch = async <T>(
     if (response.status !== 200) {
       const errorResp = await response.text();
 
-      throw `[fetch]: ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
+      throw `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
     }
 
     return response.json() as Promise<T>;

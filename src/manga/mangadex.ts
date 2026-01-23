@@ -34,7 +34,7 @@ export const getMangaAuthor = async (id: string): Promise<string> => {
     if (request.status !== 200) {
       const errorResp = await request.text();
 
-      throw `[fetch]: ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
+      throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
     }
 
     const response: AuthorResponse = await request.json();
@@ -67,7 +67,7 @@ export const getMangaDetails = async (
     if (request.status !== 200) {
       const errorResp = await request.text();
 
-      throw `[fetch]: ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
+      throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
     }
 
     const response: MangaResponse = await request.json();
@@ -169,7 +169,7 @@ export const searchManga = async (
     if (request.status !== 200) {
       const errorResp = await request.text();
 
-      throw `[fetch]: ${request.status} - ${request.statusText} (${title}) - ${errorResp}`;
+      throw `(fetch): ${request.status} - ${request.statusText} (${title}) - ${errorResp}`;
     }
 
     const response: MangaSearchResponse = await request.json();

@@ -53,16 +53,16 @@ export const getMTGCard = async (
     );
 
     if (request.status !== 200) {
-      throw `(getMTGCard): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`;
+      throw `(fetch): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`;
     }
 
     const response: ScryfallSearch | ScryfallError = await request.json();
 
     if (response.object === 'error') {
       const { details, warnings } = response as ScryfallError;
-      const errMsg = warnings ? warnings.join('\n') : details;
+      const errMsg = warnings ? warnings.join(' - ') : details;
 
-      throw `(getMTGCard): \n ${errMsg}`;
+      throw `(request): ${errMsg}`;
     }
 
     const cards = (response as ScryfallSearch).data.map(
@@ -129,7 +129,7 @@ export const getMTGCard = async (
 
     return selection;
   } catch (error) {
-    console.log(error);
-    throw error;
+    console.log(`[getMTGCard] - ${error}`);
+    throw `[getMTGCard] - ${error}`;
   }
 };
