@@ -129,3 +129,44 @@ export interface AuthorResponse {
   response: string;
   data: AuthorData;
 }
+
+// Search Response Types
+export interface MangaSearchResponse {
+  result: string;
+  response: string;
+  data: MangaData[];
+  limit: number;
+  offset: number;
+  total: number;
+}
+
+export interface MangaSearchOptions {
+  limit?: number;
+  offset?: number;
+  contentRating?: ('safe' | 'suggestive' | 'erotica' | 'pornographic')[];
+  status?: ('ongoing' | 'completed' | 'hiatus' | 'cancelled')[];
+  publicationDemographic?: ('shounen' | 'shoujo' | 'josei' | 'seinen')[];
+  includedTags?: string[];
+  excludedTags?: string[];
+  order?: {
+    title?: 'asc' | 'desc';
+    year?: 'asc' | 'desc';
+    createdAt?: 'asc' | 'desc';
+    updatedAt?: 'asc' | 'desc';
+    latestUploadedChapter?: 'asc' | 'desc';
+    followedCount?: 'asc' | 'desc';
+    relevance?: 'asc' | 'desc';
+    rating?: 'asc' | 'desc';
+  };
+}
+
+export interface MangaSearchResult {
+  id: string;
+  title: string;
+  description: string;
+  year: number | null;
+  status: string;
+  contentRating: string;
+  cover: string | null;
+  url: string;
+}

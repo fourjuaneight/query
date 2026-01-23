@@ -1,6 +1,10 @@
-import { Context } from 'hono';
-
-import { AuthorResponse, MangaResponse } from './typings';
+import {
+  AuthorResponse,
+  MangaResponse,
+  MangaSearchResponse,
+  MangaSearchResult,
+  MangaSearchOptions,
+} from './typings';
 
 export interface MangaData {
   title: string;
@@ -15,15 +19,15 @@ export interface MangaData {
 const API = 'https://api.mangadex.org';
 const ASSETS = 'https://uploads.mangadex.org';
 
-export const getMangaAuthor = async (
-  ctx: Context,
-  id: string,
-): Promise<string> => {
+/**
+ * Fetch manga author name by ID
+ * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Author/operation/get-author-id
+ */
+export const getMangaAuthor = async (id: string): Promise<string> => {
   try {
     const request = await fetch(`${API}/author/${id}`, {
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'MangaDex-API/1.0',
       },
     });
 
@@ -42,8 +46,11 @@ export const getMangaAuthor = async (
   }
 };
 
+/**
+ * Fetch detailed manga information by ID
+ * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Manga/operation/get-manga-id
+ */
 export const getMangaDetails = async (
-  ctx: Context,
   id: string,
   url: string,
 ): Promise<MangaData> => {
@@ -53,7 +60,6 @@ export const getMangaDetails = async (
       {
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'MangaDex-API/1.0',
         },
       },
     );
@@ -70,7 +76,7 @@ export const getMangaDetails = async (
     } = response;
     const coverFile = relationships?.find(rel => rel.type === 'cover_art')
       ?.attributes?.fileName;
-    const author = await getMangaAuthor(ctx, relationships[0].id);
+    const author = await getMangaAuthor(relationships[0].id);
 
     return {
       title: attributes.title.en,
@@ -84,5 +90,109 @@ export const getMangaDetails = async (
   } catch (error) {
     console.log(`[getMangaDetails] - ${error}`);
     throw `[getMangaDetails] - ${error}`;
+  }
+};
+
+/**
+ * Search for manga by title
+ * DOCS: https://api.mangadex.org/docs/03-manga/search/
+ *
+ * @param title - The manga title to search for
+ * @param options - Optional search parameters (limit, offset, contentRating, etc.)
+ * @returns Array of search results with basic info
+ *
+ * @example
+ * ```ts
+ * const results = await searchManga('Naruto', { limit: 10 });
+ * console.log(results[0].title); // 'Naruto'
+ * ```
+ */
+export const searchManga = async (
+  title: string,
+  options: MangaSearchOptions = {},
+): Promise<MangaSearchResult[]> => {
+  try {
+    const params = new URLSearchParams();
+    params.set('title', title);
+    params.set('limit', String(options.limit ?? 10));
+    params.set('offset', String(options.offset ?? 0));
+
+    // Include cover_art in relationships to get cover images
+    params.append('includes[]', 'cover_art');
+
+    // Content rating filter (default to safe and suggestive)
+    const contentRatings = options.contentRating ?? ['safe', 'suggestive'];
+    for (const rating of contentRatings) {
+      params.append('contentRating[]', rating);
+    }
+
+    // Status filter
+    if (options.status) {
+      for (const status of options.status) {
+        params.append('status[]', status);
+      }
+    }
+
+    // Publication demographic filter
+    if (options.publicationDemographic) {
+      for (const demographic of options.publicationDemographic) {
+        params.append('publicationDemographic[]', demographic);
+      }
+    }
+
+    // Tag filters
+    if (options.includedTags) {
+      for (const tag of options.includedTags) {
+        params.append('includedTags[]', tag);
+      }
+    }
+
+    if (options.excludedTags) {
+      for (const tag of options.excludedTags) {
+        params.append('excludedTags[]', tag);
+      }
+    }
+
+    // Order/sorting
+    if (options.order) {
+      for (const [key, value] of Object.entries(options.order)) {
+        params.set(`order[${key}]`, value);
+      }
+    }
+
+    const request = await fetch(`${API}/manga?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (request.status !== 200) {
+      const errorResp = await request.text();
+
+      throw `[fetch]: ${request.status} - ${request.statusText} (${title}) - ${errorResp}`;
+    }
+
+    const response: MangaSearchResponse = await request.json();
+
+    return response.data.map(manga => {
+      const coverFile = manga.relationships?.find(
+        rel => rel.type === 'cover_art',
+      )?.attributes?.fileName;
+
+      return {
+        id: manga.id,
+        title:
+          manga.attributes.title.en ?? Object.values(manga.attributes.title)[0],
+        description: manga.attributes.description?.en ?? '',
+        year: manga.attributes.year,
+        status: manga.attributes.status,
+        contentRating: manga.attributes.contentRating,
+        cover: coverFile ? `${ASSETS}/covers/${manga.id}/${coverFile}` : null,
+        url: `https://mangadex.org/title/${manga.id}`,
+      };
+    });
+  } catch (error) {
+    console.log(`[searchManga] - ${error}`);
+    throw `[searchManga] - ${error}`;
   }
 };
