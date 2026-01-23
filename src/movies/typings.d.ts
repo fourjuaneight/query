@@ -1,5 +1,3 @@
-// TMDB API Response Types
-
 // Common Types
 export interface CastMember {
   id: number;

@@ -59,6 +59,7 @@ const tmdbFetch = async <T>(
 
 /**
  * Search for a movie by title and return the first result's ID
+ * DOCS: https://developer.themoviedb.org/reference/search-movie
  */
 const searchMovie = async (
   query: string,
@@ -74,6 +75,7 @@ const searchMovie = async (
 
 /**
  * Get detailed movie information by ID (including credits)
+ * DOCS: https://developer.themoviedb.org/reference/movie-details
  */
 const getMovieDetails = async (
   movieId: number,
@@ -87,6 +89,7 @@ const getMovieDetails = async (
 
 /**
  * Search for a TV show by title
+ * DOCS: https://developer.themoviedb.org/reference/search-tv
  */
 const searchTVShow = async (
   query: string,
@@ -102,6 +105,7 @@ const searchTVShow = async (
 
 /**
  * Get detailed TV show information by ID (including aggregate credits)
+ * DOCS: https://developer.themoviedb.org/reference/tv-series-details
  */
 const getTVShowDetails = async (
   seriesId: number,
