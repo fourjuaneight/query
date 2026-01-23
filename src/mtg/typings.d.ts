@@ -159,3 +159,25 @@ export interface ScryfallError {
 export interface ScryfallCardSelection {
   [key: string]: MTGItem;
 }
+
+export interface RequestQuery {
+  name: string;
+  set?: string;
+  number?: string;
+}
+
+export interface MTGItem {
+  name: string;
+  colors: string[] | null;
+  type: string;
+  set: string;
+  set_name: string;
+  oracle_text: string | null;
+  flavor_text: string | null;
+  rarity: string;
+  collector_number: number;
+  artist: string;
+  released_at: string;
+  image: string;
+  back: string | null;
+}

@@ -24,7 +24,7 @@ const escapeText = (text: string): string => text.replace(/\n/g, '\\n');
  * @function
  * @async
  *
- * @param {RequestQuery} queryTerm search data
+ * @param {RequestQuery} queryTerm search data (set and number are optional)
  * @returns {Promise<ScryfallCardSelection>}
  */
 export const getMTGCard = async (
@@ -32,8 +32,18 @@ export const getMTGCard = async (
 ): Promise<ScryfallCardSelection> => {
   try {
     const encodedName = encodeURIComponent(queryTerm.name);
+
+    // Build query string with optional set and number filters
+    let query = encodedName;
+    if (queryTerm.set) {
+      query += `+s:${queryTerm.set}`;
+    }
+    if (queryTerm.number) {
+      query += `+cn:${queryTerm.number}`;
+    }
+
     const request = await fetch(
-      `https://api.scryfall.com/cards/search?order=set&q=${encodedName}s:${queryTerm.set}+cn:${queryTerm.number}`,
+      `https://api.scryfall.com/cards/search?order=set&q=${query}`,
       {
         method: 'GET',
         headers: {
