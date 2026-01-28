@@ -86,7 +86,7 @@ export const queryTVShow = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.log(`[queryTVShow] - ${error}`);
+    console.error(`[queryTVShow] - ${error}`);
     throw `[queryTVShow] - ${error}`;
   }
 };
@@ -127,7 +127,7 @@ export const queryTVShowById = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.log(`[queryTVShowById] - ${error}`);
+    console.error(`[queryTVShowById] - ${error}`);
     throw `[queryTVShowById] - ${error}`;
   }
 };
@@ -171,7 +171,7 @@ export const searchTVShows = async (
       page: response.page,
     };
   } catch (error) {
-    console.log(`[searchTVShows] - ${error}`);
+    console.error(`[searchTVShows] - ${error}`);
     throw `[searchTVShows] - ${error}`;
   }
 };

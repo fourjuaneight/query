@@ -41,7 +41,7 @@ export const getMangaAuthor = async (id: string): Promise<string> => {
 
     return response.data.attributes.name;
   } catch (error) {
-    console.log(`[getMangaAuthor] - ${error}`);
+    console.error(`[getMangaAuthor] - ${error}`);
     throw `[getMangaAuthor] - ${error}`;
   }
 };
@@ -88,7 +88,7 @@ export const getMangaDetails = async (
       url,
     };
   } catch (error) {
-    console.log(`[getMangaDetails] - ${error}`);
+    console.error(`[getMangaDetails] - ${error}`);
     throw `[getMangaDetails] - ${error}`;
   }
 };
@@ -186,7 +186,7 @@ export const searchManga = async (
       };
     });
   } catch (error) {
-    console.log(`[searchManga] - ${error}`);
+    console.error(`[searchManga] - ${error}`);
     throw `[searchManga] - ${error}`;
   }
 };

@@ -84,7 +84,7 @@ export const queryMovie = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.log(`[queryMovie] - ${error}`);
+    console.error(`[queryMovie] - ${error}`);
     throw `[queryMovie] - ${error}`;
   }
 };
@@ -123,7 +123,7 @@ export const queryMovieById = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.log(`[queryMovieById] - ${error}`);
+    console.error(`[queryMovieById] - ${error}`);
     throw `[queryMovieById] - ${error}`;
   }
 };
@@ -167,7 +167,7 @@ export const searchMovies = async (
       page: response.page,
     };
   } catch (error) {
-    console.log(`[searchMovies] - ${error}`);
+    console.error(`[searchMovies] - ${error}`);
     throw `[searchMovies] - ${error}`;
   }
 };

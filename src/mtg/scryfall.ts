@@ -129,7 +129,7 @@ export const getMTGCard = async (
 
     return selection;
   } catch (error) {
-    console.log(`[getMTGCard] - ${error}`);
+    console.error(`[getMTGCard] - ${error}`);
     throw `[getMTGCard] - ${error}`;
   }
 };

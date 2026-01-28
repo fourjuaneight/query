@@ -50,7 +50,7 @@ export const tmdbFetch = async <T>(
 
     return response.json() as Promise<T>;
   } catch (error) {
-    console.log(`(tmdbFetch): ${error}`);
+    console.error(`(tmdbFetch): ${error}`);
     throw `(tmdbFetch): ${error}`;
   }
 };
