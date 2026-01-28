@@ -43,13 +43,6 @@ const getTVShowDetails = async (
  * @param title - The TV show title to search for
  * @param options - Optional query parameters (language, year)
  * @returns Normalized TV show data or null if not found
- *
- * @example
- * ```ts
- * const show = await queryTVShow("Breaking Bad");
- * console.log(show?.seasonCount); // 5
- * console.log(show?.episodeCount); // 62
- * ```
  */
 export const queryTVShow = async (
   title: string,

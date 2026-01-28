@@ -43,12 +43,6 @@ const getMovieDetails = async (
  * @param title - The movie title to search for
  * @param options - Optional query parameters (language, year)
  * @returns Normalized movie data or null if not found
- *
- * @example
- * ```ts
- * const movie = await queryMovie("The Matrix", { year: 1999 });
- * console.log(movie?.director); // "Lana Wachowski"
- * ```
  */
 export const queryMovie = async (
   title: string,

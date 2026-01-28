@@ -100,12 +100,6 @@ export const getMangaDetails = async (
  * @param title - The manga title to search for
  * @param options - Optional search parameters (limit, offset, contentRating, etc.)
  * @returns Array of search results with basic info
- *
- * @example
- * ```ts
- * const results = await searchManga('Naruto', { limit: 10 });
- * console.log(results[0].title); // 'Naruto'
- * ```
  */
 export const searchManga = async (
   title: string,
