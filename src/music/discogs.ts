@@ -1,0 +1,233 @@
+import type {
+  DiscogsSearchParams,
+  DiscogsSearchResponse,
+  DiscogsQueryOptions,
+  AlbumSearchResult,
+  ArtistSearchResult,
+  TrackSearchResult,
+  PaginatedResults,
+} from './typings';
+
+const DISCOGS_BASE_URL = 'https://api.discogs.com';
+
+/**
+ * Get the Discogs personal access token from environment variables
+ */
+const getToken = (): string => {
+  const token = process.env.DISCOGS_TOKEN;
+  if (!token) {
+    throw `(getToken): DISCOGS_TOKEN environment variable is not set`;
+  }
+  return token;
+};
+
+/**
+ * Make a request to the Discogs API
+ * DOCS: https://www.discogs.com/developers
+ */
+const discogsFetch = async <T>(
+  endpoint: string,
+  params: Record<string, string | number> = {},
+): Promise<T> => {
+  try {
+    const token = getToken();
+    const url = new URL(`${DISCOGS_BASE_URL}${endpoint}`);
+
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, String(value));
+      }
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Discogs token=${token}`,
+        'User-Agent': 'QueryAPI/1.0',
+      },
+    });
+
+    if (response.status !== 200) {
+      const errorResp = await response.text();
+      throw `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
+    }
+
+    return response.json() as Promise<T>;
+  } catch (error) {
+    console.error(`(discogsFetch): ${error}`);
+    throw `(discogsFetch): ${error}`;
+  }
+};
+
+/**
+ * Issue a search query to the Discogs database
+ * DOCS: https://www.discogs.com/developers#page:database,header:database-search
+ */
+const searchDiscogs = async (
+  params: DiscogsSearchParams,
+): Promise<DiscogsSearchResponse> => {
+  const searchParams: Record<string, string | number> = {};
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) {
+      // Map 'query' to the Discogs 'q' parameter
+      const paramKey = key === 'query' ? 'q' : key;
+      searchParams[paramKey] = value;
+    }
+  }
+
+  return discogsFetch<DiscogsSearchResponse>('/database/search', searchParams);
+};
+
+/**
+ * Parse "Artist - Title" format from Discogs search result title
+ */
+const parseTitle = (title: string): { artist: string; name: string } => {
+  const separatorIndex = title.indexOf(' - ');
+  if (separatorIndex === -1) {
+    return { artist: '', name: title };
+  }
+  return {
+    artist: title.substring(0, separatorIndex),
+    name: title.substring(separatorIndex + 3),
+  };
+};
+
+/**
+ * Search for an artist by name
+ *
+ * @param name - The artist name to search for
+ * @param options - Optional query parameters (page, perPage)
+ * @returns Paginated list of matching artists
+ */
+export const searchArtist = async (
+  name: string,
+  options: Pick<DiscogsQueryOptions, 'page' | 'perPage'> = {},
+): Promise<PaginatedResults<ArtistSearchResult>> => {
+  try {
+    const response = await searchDiscogs({
+      query: name,
+      type: 'artist',
+      per_page: options.perPage ?? 10,
+      page: options.page ?? 1,
+    });
+
+    return {
+      results: response.results.map(result => ({
+        id: result.id,
+        title: result.title,
+        resourceUrl: result.resource_url,
+        thumbUrl: result.thumb,
+      })),
+      totalResults: response.pagination.items,
+      totalPages: response.pagination.pages,
+      page: response.pagination.page,
+    };
+  } catch (error) {
+    console.error(`[searchArtist] - ${error}`);
+    throw `[searchArtist] - ${error}`;
+  }
+};
+
+/**
+ * Search for an album (release) by title
+ * Optionally filter by artist, year, genre, format, and country
+ *
+ * @param title - The album title to search for
+ * @param options - Optional query parameters
+ * @returns Paginated list of matching albums
+ */
+export const searchAlbum = async (
+  title: string,
+  options: DiscogsQueryOptions & { artist?: string } = {},
+): Promise<PaginatedResults<AlbumSearchResult>> => {
+  try {
+    const response = await searchDiscogs({
+      release_title: title,
+      type: 'master',
+      ...(options.artist && { artist: options.artist }),
+      ...(options.year && { year: options.year }),
+      ...(options.genre && { genre: options.genre }),
+      ...(options.style && { style: options.style }),
+      ...(options.format && { format: options.format }),
+      ...(options.country && { country: options.country }),
+      per_page: options.perPage ?? 10,
+      page: options.page ?? 1,
+    });
+
+    return {
+      results: response.results.map(result => {
+        const { artist } = parseTitle(result.title);
+
+        return {
+          id: result.id,
+          title: result.title,
+          artist,
+          year: result.year ?? null,
+          genres: result.genre ?? [],
+          styles: result.style ?? [],
+          formats: result.format ?? [],
+          labels: result.label ?? [],
+          country: result.country ?? null,
+          resourceUrl: result.resource_url,
+          thumbUrl: result.thumb,
+          community: result.community ?? null,
+        };
+      }),
+      totalResults: response.pagination.items,
+      totalPages: response.pagination.pages,
+      page: response.pagination.page,
+    };
+  } catch (error) {
+    console.error(`[searchAlbum] - ${error}`);
+    throw `[searchAlbum] - ${error}`;
+  }
+};
+
+/**
+ * Search for a song (track) across releases
+ *
+ * @param track - The track/song title to search for
+ * @param options - Optional query parameters
+ * @returns Paginated list of releases containing the track
+ */
+export const searchTrack = async (
+  track: string,
+  options: DiscogsQueryOptions & { artist?: string } = {},
+): Promise<PaginatedResults<TrackSearchResult>> => {
+  try {
+    const response = await searchDiscogs({
+      track,
+      type: 'release',
+      ...(options.artist && { artist: options.artist }),
+      ...(options.year && { year: options.year }),
+      ...(options.genre && { genre: options.genre }),
+      ...(options.style && { style: options.style }),
+      ...(options.format && { format: options.format }),
+      ...(options.country && { country: options.country }),
+      per_page: options.perPage ?? 10,
+      page: options.page ?? 1,
+    });
+
+    return {
+      results: response.results.map(result => ({
+        id: result.id,
+        title: result.title,
+        year: result.year ?? null,
+        genres: result.genre ?? [],
+        styles: result.style ?? [],
+        formats: result.format ?? [],
+        labels: result.label ?? [],
+        country: result.country ?? null,
+        resourceUrl: result.resource_url,
+        thumbUrl: result.thumb,
+      })),
+      totalResults: response.pagination.items,
+      totalPages: response.pagination.pages,
+      page: response.pagination.page,
+    };
+  } catch (error) {
+    console.error(`[searchTrack] - ${error}`);
+    throw `[searchTrack] - ${error}`;
+  }
+};
