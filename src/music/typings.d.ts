@@ -73,43 +73,34 @@ export interface DiscogsQueryOptions {
   style?: string;
   format?: string;
   country?: string;
+  barcode?: string;
   page?: number;
   perPage?: number;
 }
 
 export interface ArtistSearchResult {
-  id: number;
   title: string;
-  resourceUrl: string;
-  thumbUrl: string;
+  coverUrl: string | null;
 }
 
 export interface AlbumSearchResult {
-  id: number;
   title: string;
   artist: string;
   year: string | null;
   genres: string[];
-  styles: string[];
-  formats: string[];
-  labels: string[];
   country: string | null;
-  resourceUrl: string;
-  thumbUrl: string;
+  barcode: string[];
+  coverUrl: string | null;
   community: DiscogsCommunity | null;
 }
 
 export interface TrackSearchResult {
-  id: number;
   title: string;
+  artist: string;
   year: string | null;
   genres: string[];
-  styles: string[];
-  formats: string[];
-  labels: string[];
   country: string | null;
-  resourceUrl: string;
-  thumbUrl: string;
+  coverUrl: string | null;
 }
 
 export interface PaginatedResults<T> {

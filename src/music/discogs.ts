@@ -114,10 +114,8 @@ export const searchArtist = async (
 
     return {
       results: response.results.map(result => ({
-        id: result.id,
         title: result.title,
-        resourceUrl: result.resource_url,
-        thumbUrl: result.thumb,
+        coverUrl: result.cover_image ?? null,
       })),
       totalResults: response.pagination.items,
       totalPages: response.pagination.pages,
@@ -160,17 +158,13 @@ export const searchAlbum = async (
         const { artist } = parseTitle(result.title);
 
         return {
-          id: result.id,
           title: result.title,
           artist,
           year: result.year ?? null,
           genres: result.genre ?? [],
-          styles: result.style ?? [],
-          formats: result.format ?? [],
-          labels: result.label ?? [],
           country: result.country ?? null,
-          resourceUrl: result.resource_url,
-          thumbUrl: result.thumb,
+          barcode: result.barcode ?? [],
+          coverUrl: result.cover_image ?? null,
           community: result.community ?? null,
         };
       }),
@@ -210,18 +204,18 @@ export const searchTrack = async (
     });
 
     return {
-      results: response.results.map(result => ({
-        id: result.id,
-        title: result.title,
-        year: result.year ?? null,
-        genres: result.genre ?? [],
-        styles: result.style ?? [],
-        formats: result.format ?? [],
-        labels: result.label ?? [],
-        country: result.country ?? null,
-        resourceUrl: result.resource_url,
-        thumbUrl: result.thumb,
-      })),
+      results: response.results.map(result => {
+        const { artist } = parseTitle(result.title);
+
+        return {
+          title: result.title,
+          artist,
+          year: result.year ?? null,
+          genres: result.genre ?? [],
+          country: result.country ?? null,
+          coverUrl: result.cover_image ?? null,
+        };
+      }),
       totalResults: response.pagination.items,
       totalPages: response.pagination.pages,
       page: response.pagination.page,
