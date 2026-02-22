@@ -1,3 +1,6 @@
+import type { Context } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
+
 import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
 
 /**
@@ -87,3 +90,18 @@ export const tmdbFetch = async <T>(
  */
 export const parseJSON = async <T>(response: Response): Promise<T> =>
   (await response.json()) as T;
+
+/**
+ * Standard JSON success response.
+ */
+export const jsonSuccess = (ctx: Context, data: unknown): Response =>
+  ctx.json({ success: true, data });
+
+/**
+ * Standard JSON error response.
+ */
+export const jsonError = (
+  ctx: Context,
+  message: string,
+  status: ContentfulStatusCode = 400,
+): Response => ctx.json({ success: false, error: message }, status);
