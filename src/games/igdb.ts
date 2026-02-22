@@ -77,7 +77,7 @@ const igdbFetch = async <T>(endpoint: string, body: string): Promise<T> => {
  */
 const formatReleaseDate = (timestamp?: number): string | null => {
   if (!timestamp) return null;
-  return new Date(timestamp * 1000).toISOString().split('T')[0];
+  return new Date(timestamp * 1000).toISOString().split('T')[0] ?? null;
 };
 
 /**
@@ -154,7 +154,10 @@ export const queryGame = async (title: string): Promise<GameData | null> => {
       return null;
     }
 
-    return results[0];
+    const first = results[0];
+    if (!first) return null;
+
+    return first;
   } catch (error) {
     console.error(`[queryGame] - ${error}`);
     throw `[queryGame] - ${error}`;
@@ -184,7 +187,10 @@ export const queryGameById = async (
       return null;
     }
 
-    return normalizeGameData(results[0]);
+    const first = results[0];
+    if (!first) return null;
+
+    return normalizeGameData(first);
   } catch (error) {
     console.error(`[queryGameById] - ${error}`);
     throw `[queryGameById] - ${error}`;

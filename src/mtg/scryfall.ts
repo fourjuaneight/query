@@ -6,7 +6,7 @@ import {
   ScryfallSearch,
 } from './typings.d';
 
-const magicColors: { [key: string]: string } = {
+const magicColors: Record<string, string> = {
   W: 'White',
   U: 'Blue',
   B: 'Black',
@@ -53,7 +53,7 @@ export const getMTGCard = async (
       throw `(fetch): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`;
     }
 
-    const response: ScryfallSearch | ScryfallError = await request.json();
+    const response = (await request.json()) as ScryfallSearch | ScryfallError;
 
     if (response.object === 'error') {
       const { details, warnings } = response as ScryfallError;
@@ -92,7 +92,9 @@ export const getMTGCard = async (
           name,
           colors:
             colors?.length !== 0
-              ? colors?.map(color => magicColors[color])
+              ? (colors
+                  ?.map(color => magicColors[color])
+                  .filter((c): c is string => c !== undefined) ?? null)
               : null,
           type: type_line,
           set: set.toUpperCase(),

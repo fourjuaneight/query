@@ -13,7 +13,7 @@ export interface TagsEntity {
   id: string;
   type: string;
   attributes: TagsAttributes;
-  relationships?: any[];
+  relationships?: RelationshipsEntity[];
 }
 
 export interface AltTitlesEntity {
@@ -99,7 +99,7 @@ export interface MangaResponse {
 export interface AuthorAttributes {
   name: string;
   imageUrl?: null;
-  biography: any;
+  biography: Record<string, string> | string;
   twitter?: null;
   pixiv?: null;
   melonBook?: null;

@@ -58,7 +58,11 @@ export const queryTVShow = async (
     }
 
     // Get the first (most relevant) result
-    const seriesId = searchResults.results[0].id;
+    const firstResult = searchResults.results[0];
+    if (!firstResult) {
+      return null;
+    }
+    const seriesId = firstResult.id;
 
     // Fetch detailed information with aggregate credits
     const details = await getTVShowDetails(seriesId, options.language);

@@ -16,6 +16,9 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
     "target": "ESNext",
     "types": ["@cloudflare/workers-types", "node"]
   },

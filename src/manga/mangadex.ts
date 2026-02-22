@@ -37,7 +37,7 @@ const getMangaAuthor = async (id: string): Promise<string> => {
       throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
     }
 
-    const response: AuthorResponse = await request.json();
+    const response = (await request.json()) as AuthorResponse;
 
     return response.data.attributes.name;
   } catch (error) {
@@ -70,13 +70,17 @@ export const getMangaDetails = async (id: string): Promise<MangaData> => {
       throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
     }
 
-    const response: MangaResponse = await request.json();
+    const response = (await request.json()) as MangaResponse;
     const {
       data: { attributes, relationships },
     } = response;
     const coverFile = relationships?.find(rel => rel.type === 'cover_art')
       ?.attributes?.fileName;
-    const author = await getMangaAuthor(relationships[0].id);
+    const firstRelationship = relationships?.[0];
+    if (!firstRelationship) {
+      throw '(getMangaDetails): No relationships found for manga';
+    }
+    const author = await getMangaAuthor(firstRelationship.id);
 
     return {
       title: attributes.title.en,
@@ -85,6 +89,7 @@ export const getMangaDetails = async (id: string): Promise<MangaData> => {
       year: attributes.year,
       status: attributes.status,
       cover: `${ASSETS}/covers/${id}/${coverFile}`,
+      url: `https://mangadex.org/title/${id}`,
     };
   } catch (error) {
     console.error(`[getMangaDetails] - ${error}`);
@@ -166,7 +171,7 @@ export const searchManga = async (
       throw `(fetch): ${request.status} - ${request.statusText} (${title}) - ${errorResp}`;
     }
 
-    const response: MangaSearchResponse = await request.json();
+    const response = (await request.json()) as MangaSearchResponse;
 
     return response.data.map(manga => {
       const coverFile = manga.relationships?.find(

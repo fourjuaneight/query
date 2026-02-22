@@ -58,7 +58,11 @@ export const queryMovie = async (
     }
 
     // Get the first (most relevant) result
-    const movieId = searchResults.results[0].id;
+    const firstResult = searchResults.results[0];
+    if (!firstResult) {
+      return null;
+    }
+    const movieId = firstResult.id;
 
     // Fetch detailed information with credits
     const details = await getMovieDetails(movieId, options.language);
