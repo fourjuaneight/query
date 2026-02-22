@@ -4,6 +4,7 @@ import type {
   TMDBTVSearchResponse,
   TMDBTVDetails,
   TVShowData,
+  TVShowSearchResponse,
 } from './typings';
 
 /**
@@ -65,23 +66,15 @@ export const queryTVShow = async (
     // Extract creators
     const creators = details.created_by.map(creator => creator.name);
 
-    // Extract top cast members (limit to 10)
-    const cast =
-      details.aggregate_credits?.cast.slice(0, 10).map(member => member.name) ??
-      [];
-
     return {
-      id: details.id,
       title: details.name,
       firstAirDate: details.first_air_date,
       lastAirDate: details.last_air_date,
       creators,
-      cast,
       genres: details.genres.map(genre => genre.name),
       seasonCount: details.number_of_seasons,
       episodeCount: details.number_of_episodes,
       overview: details.overview,
-      rating: details.vote_average,
       status: details.status,
       posterUrl: buildPosterUrl(details.poster_path),
     };
@@ -107,22 +100,16 @@ export const queryTVShowById = async (
     const details = await getTVShowDetails(seriesId, language);
 
     const creators = details.created_by.map(creator => creator.name);
-    const cast =
-      details.aggregate_credits?.cast.slice(0, 10).map(member => member.name) ??
-      [];
 
     return {
-      id: details.id,
       title: details.name,
       firstAirDate: details.first_air_date,
       lastAirDate: details.last_air_date,
       creators,
-      cast,
       genres: details.genres.map(genre => genre.name),
       seasonCount: details.number_of_seasons,
       episodeCount: details.number_of_episodes,
       overview: details.overview,
-      rating: details.vote_average,
       status: details.status,
       posterUrl: buildPosterUrl(details.poster_path),
     };
@@ -143,29 +130,33 @@ export const queryTVShowById = async (
 export const searchTVShows = async (
   query: string,
   options: TMDBQueryOptions = {},
-): Promise<{
-  results: Array<{
-    id: number;
-    title: string;
-    firstAirDate: string;
-    overview: string;
-    posterUrl: string | null;
-  }>;
-  totalResults: number;
-  totalPages: number;
-  page: number;
-}> => {
+): Promise<TVShowSearchResponse> => {
   try {
     const response = await searchTVShow(query, options);
 
+    const results = await Promise.all(
+      response.results.map(async show => {
+        const details = await getTVShowDetails(show.id, options.language);
+
+        const creators = details.created_by.map(creator => creator.name);
+
+        return {
+          title: details.name,
+          firstAirDate: details.first_air_date,
+          lastAirDate: details.last_air_date,
+          creators,
+          genres: details.genres.map(genre => genre.name),
+          seasonCount: details.number_of_seasons,
+          episodeCount: details.number_of_episodes,
+          overview: details.overview,
+          status: details.status,
+          posterUrl: buildPosterUrl(details.poster_path),
+        };
+      }),
+    );
+
     return {
-      results: response.results.map(show => ({
-        id: show.id,
-        title: show.name,
-        firstAirDate: show.first_air_date,
-        overview: show.overview,
-        posterUrl: buildPosterUrl(show.poster_path),
-      })),
+      results,
       totalResults: response.total_results,
       totalPages: response.total_pages,
       page: response.page,

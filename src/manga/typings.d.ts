@@ -67,6 +67,7 @@ export interface MangaAttributes {
 }
 
 export interface RelationshipsAttributes {
+  name?: string;
   description: string;
   volume: string;
   fileName: string;
@@ -163,9 +164,8 @@ export interface MangaSearchOptions {
 export interface MangaSearchResult {
   title: string;
   description: string;
+  author: string;
   year: number | null;
   status: string;
-  contentRating: string;
   cover: string | null;
-  url: string;
 }

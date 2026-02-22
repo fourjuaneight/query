@@ -62,14 +62,18 @@ export interface TMDBMovieDetails {
 
 // Normalized Output Types
 export interface MovieData {
-  id: number;
   title: string;
   releaseDate: string;
   director: string | null;
-  cast: string[];
   genres: string[];
   runtime: number;
   overview: string;
-  rating: number;
   posterUrl: string | null;
+}
+
+export interface MovieSearchResponse {
+  results: MovieData[];
+  totalResults: number;
+  totalPages: number;
+  page: number;
 }

@@ -89,17 +89,21 @@ export interface TMDBTVDetails {
 
 // Normalized Output Types
 export interface TVShowData {
-  id: number;
   title: string;
   firstAirDate: string;
   lastAirDate: string;
   creators: string[];
-  cast: string[];
   genres: string[];
   seasonCount: number;
   episodeCount: number;
   overview: string;
-  rating: number;
   status: string;
   posterUrl: string | null;
+}
+
+export interface TVShowSearchResponse {
+  results: TVShowData[];
+  totalResults: number;
+  totalPages: number;
+  page: number;
 }

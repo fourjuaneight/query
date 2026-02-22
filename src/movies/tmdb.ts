@@ -4,6 +4,7 @@ import type {
   TMDBMovieSearchResponse,
   TMDBMovieDetails,
   MovieData,
+  MovieSearchResponse,
 } from './typings';
 
 /**
@@ -67,20 +68,13 @@ export const queryMovie = async (
       details.credits?.crew.find(member => member.job === 'Director')?.name ??
       null;
 
-    // Extract top cast members (limit to 10)
-    const cast =
-      details.credits?.cast.slice(0, 10).map(member => member.name) ?? [];
-
     return {
-      id: details.id,
       title: details.title,
       releaseDate: details.release_date,
       director,
-      cast,
       genres: details.genres.map(genre => genre.name),
       runtime: details.runtime,
       overview: details.overview,
-      rating: details.vote_average,
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
@@ -107,19 +101,14 @@ export const queryMovieById = async (
     const director =
       details.credits?.crew.find(member => member.job === 'Director')?.name ??
       null;
-    const cast =
-      details.credits?.cast.slice(0, 10).map(member => member.name) ?? [];
 
     return {
-      id: details.id,
       title: details.title,
       releaseDate: details.release_date,
       director,
-      cast,
       genres: details.genres.map(genre => genre.name),
       runtime: details.runtime,
       overview: details.overview,
-      rating: details.vote_average,
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
@@ -139,29 +128,32 @@ export const queryMovieById = async (
 export const searchMovies = async (
   query: string,
   options: TMDBQueryOptions = {},
-): Promise<{
-  results: Array<{
-    id: number;
-    title: string;
-    releaseDate: string;
-    overview: string;
-    posterUrl: string | null;
-  }>;
-  totalResults: number;
-  totalPages: number;
-  page: number;
-}> => {
+): Promise<MovieSearchResponse> => {
   try {
     const response = await searchMovie(query, options);
 
+    const results = await Promise.all(
+      response.results.map(async movie => {
+        const details = await getMovieDetails(movie.id, options.language);
+
+        const director =
+          details.credits?.crew.find(member => member.job === 'Director')
+            ?.name ?? null;
+
+        return {
+          title: details.title,
+          releaseDate: details.release_date,
+          director,
+          genres: details.genres.map(genre => genre.name),
+          runtime: details.runtime,
+          overview: details.overview,
+          posterUrl: buildPosterUrl(details.poster_path),
+        };
+      }),
+    );
+
     return {
-      results: response.results.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        releaseDate: movie.release_date,
-        overview: movie.overview,
-        posterUrl: buildPosterUrl(movie.poster_path),
-      })),
+      results,
       totalResults: response.total_results,
       totalPages: response.total_pages,
       page: response.page,

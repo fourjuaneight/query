@@ -23,7 +23,7 @@ const ASSETS = 'https://uploads.mangadex.org';
  * Fetch manga author name by ID
  * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Author/operation/get-author-id
  */
-export const getMangaAuthor = async (id: string): Promise<string> => {
+const getMangaAuthor = async (id: string): Promise<string> => {
   try {
     const request = await fetch(`${API}/author/${id}`, {
       headers: {
@@ -50,10 +50,7 @@ export const getMangaAuthor = async (id: string): Promise<string> => {
  * Fetch detailed manga information by ID
  * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Manga/operation/get-manga-id
  */
-export const getMangaDetails = async (
-  id: string,
-  url: string,
-): Promise<MangaData> => {
+export const getMangaDetails = async (id: string): Promise<MangaData> => {
   try {
     const request = await fetch(
       `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
@@ -85,7 +82,6 @@ export const getMangaDetails = async (
       year: attributes.year,
       status: attributes.status,
       cover: `${ASSETS}/covers/${id}/${coverFile}`,
-      url,
     };
   } catch (error) {
     console.error(`[getMangaDetails] - ${error}`);
@@ -111,8 +107,9 @@ export const searchManga = async (
     params.set('limit', String(options.limit ?? 10));
     params.set('offset', String(options.offset ?? 0));
 
-    // Include cover_art in relationships to get cover images
+    // Include cover_art and author in relationships
     params.append('includes[]', 'cover_art');
+    params.append('includes[]', 'author');
 
     // Content rating filter (default to safe and suggestive)
     const contentRatings = options.contentRating ?? ['safe', 'suggestive'];
@@ -172,16 +169,18 @@ export const searchManga = async (
       const coverFile = manga.relationships?.find(
         rel => rel.type === 'cover_art',
       )?.attributes?.fileName;
+      const author =
+        manga.relationships?.find(rel => rel.type === 'author')?.attributes
+          ?.name ?? '';
 
       return {
         title:
           manga.attributes.title.en ?? Object.values(manga.attributes.title)[0],
         description: manga.attributes.description?.en ?? '',
+        author,
         year: manga.attributes.year,
         status: manga.attributes.status,
-        contentRating: manga.attributes.contentRating,
         cover: coverFile ? `${ASSETS}/covers/${manga.id}/${coverFile}` : null,
-        url: `https://mangadex.org/title/${manga.id}`,
       };
     });
   } catch (error) {

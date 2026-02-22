@@ -2,7 +2,6 @@
 import {
   MTGItem,
   RequestQuery,
-  ScryfallCardSelection,
   ScryfallError,
   ScryfallSearch,
 } from './typings.d';
@@ -25,11 +24,11 @@ const escapeText = (text: string): string => text.replace(/\n/g, '\\n');
  * @async
  *
  * @param {RequestQuery} queryTerm search data (set and number are optional)
- * @returns {Promise<ScryfallCardSelection>}
+ * @returns {Promise<MTGItem[]>}
  */
 export const getMTGCard = async (
   queryTerm: RequestQuery,
-): Promise<ScryfallCardSelection> => {
+): Promise<MTGItem[]> => {
   try {
     const encodedName = encodeURIComponent(queryTerm.name);
 
@@ -113,21 +112,8 @@ export const getMTGCard = async (
         return item;
       },
     );
-    // cards keyed by name, set, and collector number
-    const selection: ScryfallCardSelection = cards.reduce((acc, card) => {
-      const { name, set, collector_number } = card;
-      const key = `${name} - (${set}) #${collector_number}`;
 
-      if (!acc[key]) {
-        acc[key] = {
-          [key]: card,
-        };
-      }
-
-      return acc;
-    }, {} as ScryfallCardSelection);
-
-    return selection;
+    return cards;
   } catch (error) {
     console.error(`[getMTGCard] - ${error}`);
     throw `[getMTGCard] - ${error}`;
