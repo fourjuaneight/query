@@ -108,7 +108,6 @@ export interface OpenLibraryReadResponse {
 
 // Normalized Output Types
 export interface BookSearchResult {
-  id: string;
   title: string;
   subtitle: string | null;
   authors: string[];
@@ -118,7 +117,6 @@ export interface BookSearchResult {
   genre: string[];
   isbn10: string | null;
   isbn13: string | null;
-  openLibraryUrl: string;
   coverUrl: string | null;
 }
 

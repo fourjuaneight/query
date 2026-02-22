@@ -10,7 +10,6 @@ import type {
 const OPENLIBRARY_BASE_URL = 'https://openlibrary.org/api/volumes/brief';
 const OPENLIBRARY_SEARCH_URL = 'https://openlibrary.org/search.json';
 const OPENLIBRARY_COVERS_URL = 'https://covers.openlibrary.org/b';
-const OPENLIBRARY_WORKS_URL = 'https://openlibrary.org/works';
 
 type IdType = 'isbn' | 'lccn' | 'oclc' | 'olid';
 
@@ -92,7 +91,6 @@ const normalizeBookData = (record: OpenLibraryRecord): BookSearchResult => {
   const firstPublishYear = yearMatch ? parseInt(yearMatch[0], 10) : null;
 
   return {
-    id: data.identifiers.openlibrary?.[0] ?? data.key,
     title: data.title,
     subtitle: data.subtitle ?? null,
     authors: data.authors?.map(author => author.name) ?? [],
@@ -102,7 +100,6 @@ const normalizeBookData = (record: OpenLibraryRecord): BookSearchResult => {
     genre: data.subjects?.map(subject => subject.name).slice(0, 10) ?? [],
     isbn10,
     isbn13,
-    openLibraryUrl: record.recordURL,
     coverUrl: buildCoverUrl(isbn13 ?? isbn10),
   };
 };
@@ -110,25 +107,18 @@ const normalizeBookData = (record: OpenLibraryRecord): BookSearchResult => {
 /**
  * Normalize OpenLibrary search doc to BookSearchResult format
  */
-const normalizeSearchDoc = (doc: OpenLibrarySearchDoc): BookSearchResult => {
-  // Extract work ID from key (e.g., "/works/OL27448W" -> "OL27448W")
-  const workId = doc.key.replace('/works/', '');
-
-  return {
-    id: workId,
-    title: doc.title,
-    subtitle: doc.subtitle ?? null,
-    authors: doc.author_name ?? [],
-    firstPublishYear: doc.first_publish_year ?? null,
-    publishers: doc.publisher?.slice(0, 5) ?? [],
-    pageCount: doc.number_of_pages_median ?? null,
-    genre: doc.subject?.slice(0, 10) ?? [],
-    isbn10: doc.isbn?.find(i => i.length === 10) ?? null,
-    isbn13: doc.isbn?.find(i => i.length === 13) ?? null,
-    coverUrl: buildCoverUrlFromId(doc.cover_i),
-    openLibraryUrl: `${OPENLIBRARY_WORKS_URL}/${workId}`,
-  };
-};
+const normalizeSearchDoc = (doc: OpenLibrarySearchDoc): BookSearchResult => ({
+  title: doc.title,
+  subtitle: doc.subtitle ?? null,
+  authors: doc.author_name ?? [],
+  firstPublishYear: doc.first_publish_year ?? null,
+  publishers: doc.publisher?.slice(0, 5) ?? [],
+  pageCount: doc.number_of_pages_median ?? null,
+  genre: doc.subject?.slice(0, 10) ?? [],
+  isbn10: doc.isbn?.find(i => i.length === 10) ?? null,
+  isbn13: doc.isbn?.find(i => i.length === 13) ?? null,
+  coverUrl: buildCoverUrlFromId(doc.cover_i),
+});
 
 /**
  * Query book data by ISBN
