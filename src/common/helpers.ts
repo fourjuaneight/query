@@ -2,6 +2,8 @@ import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
 
 /**
  * Get the TMDB API key from environment variables
+ *
+ * @returns The TMDB API key
  */
 export const getApiKey = (): string => {
   const key = process.env.TMDB_KEY;
@@ -13,6 +15,9 @@ export const getApiKey = (): string => {
 
 /**
  * Build full poster URL from path
+ *
+ * @param posterPath - The poster image path from TMDB
+ * @returns Full poster URL or null if no path provided
  */
 export const buildPosterUrl = (posterPath: string | null): string | null => {
   return posterPath ? `${TMDB_IMAGE_BASE_URL}${posterPath}` : null;
@@ -20,6 +25,10 @@ export const buildPosterUrl = (posterPath: string | null): string | null => {
 
 /**
  * Make a request to the TMDB API
+ *
+ * @param endpoint - The API endpoint path
+ * @param params - Optional query parameters
+ * @returns Parsed JSON response
  */
 export const tmdbFetch = async <T>(
   endpoint: string,

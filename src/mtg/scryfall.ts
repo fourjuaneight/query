@@ -20,11 +20,9 @@ const escapeText = (text: string): string => text.replace(/\n/g, '\\n');
  * Search Scryfall database for cards matching the given search pattern.
  * DOCS: https://scryfall.com/docs/api/cards/search
  * REF: https://scryfall.com/docs/syntax
- * @function
- * @async
  *
- * @param {RequestQuery} queryTerm search data (set and number are optional)
- * @returns {Promise<MTGItem[]>}
+ * @param queryTerm search data (set and number are optional)
+ * @returns Array of MTG items matching the search criteria, with details like name, type, oracle text, etc.
  */
 export const getMTGCard = async (
   queryTerm: RequestQuery,

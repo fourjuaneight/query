@@ -49,6 +49,9 @@ const getMangaAuthor = async (id: string): Promise<string> => {
 /**
  * Fetch detailed manga information by ID
  * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Manga/operation/get-manga-id
+ *
+ * @param id - The MangaDex manga ID
+ * @returns Detailed manga data including title, description, author, and cover
  */
 export const getMangaDetails = async (id: string): Promise<MangaData> => {
   try {
