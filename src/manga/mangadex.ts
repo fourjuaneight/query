@@ -41,8 +41,8 @@ const getMangaAuthor = async (id: string): Promise<string> => {
 
     return response.data.attributes.name;
   } catch (error) {
-    console.error(`[getMangaAuthor] - ${error}`);
-    throw `[getMangaAuthor] - ${error}`;
+    console.error(`(getMangaAuthor) - ${error}`);
+    throw `(getMangaAuthor) - ${error}`;
   }
 };
 
