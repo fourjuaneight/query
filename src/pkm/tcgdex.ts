@@ -4,6 +4,7 @@ import type {
   TCGdexCard,
   TCGdexCardBrief,
 } from './typings.d';
+import { parseJSON } from '../common/helpers';
 
 const API = 'https://api.tcgdex.net/v2/en';
 
@@ -31,13 +32,20 @@ const searchCards = async (
 
     if (request.status !== 200) {
       const errorResp = await request.text();
-      throw `(fetch): ${request.status} - ${request.statusText} (${name}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${request.status} - ${request.statusText} (${name}) - ${errorResp}`,
+      );
     }
 
-    return (await request.json()) as TCGdexCardBrief[];
+    return parseJSON<TCGdexCardBrief[]>(request);
   } catch (error) {
-    console.error(`(searchCards) - ${error}`);
-    throw `(searchCards) - ${error}`;
+    if (error instanceof Error) {
+      console.error(`(searchCards) - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(searchCards) - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -55,13 +63,20 @@ const getCardDetails = async (id: string): Promise<TCGdexCard> => {
 
     if (request.status !== 200) {
       const errorResp = await request.text();
-      throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`,
+      );
     }
 
-    return (await request.json()) as TCGdexCard;
+    return parseJSON<TCGdexCard>(request);
   } catch (error) {
-    console.error(`(getCardDetails) - ${error}`);
-    throw `(getCardDetails) - ${error}`;
+    if (error instanceof Error) {
+      console.error(`(getCardDetails) - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(getCardDetails) - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -107,7 +122,12 @@ export const getPKMCard = async (
 
     return cards;
   } catch (error) {
-    console.error(`[getPKMCard] - ${error}`);
-    throw `[getPKMCard] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[getPKMCard] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[getPKMCard] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

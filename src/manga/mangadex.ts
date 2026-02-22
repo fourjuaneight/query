@@ -1,20 +1,12 @@
-import {
+import type {
   AuthorResponse,
   MangaResponse,
   MangaSearchResponse,
   MangaSearchResult,
   MangaSearchOptions,
+  MangaDetails,
 } from './typings';
-
-export interface MangaData {
-  title: string;
-  description: string;
-  author: string;
-  year: number;
-  status: string;
-  cover: string;
-  url: string;
-}
+import { parseJSON } from '../common/helpers';
 
 const API = 'https://api.mangadex.org';
 const ASSETS = 'https://uploads.mangadex.org';
@@ -34,15 +26,22 @@ const getMangaAuthor = async (id: string): Promise<string> => {
     if (request.status !== 200) {
       const errorResp = await request.text();
 
-      throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`,
+      );
     }
 
-    const response = (await request.json()) as AuthorResponse;
+    const response = await parseJSON<AuthorResponse>(request);
 
     return response.data.attributes.name;
   } catch (error) {
-    console.error(`(getMangaAuthor) - ${error}`);
-    throw `(getMangaAuthor) - ${error}`;
+    if (error instanceof Error) {
+      console.error(`(getMangaAuthor) - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(getMangaAuthor) - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -53,7 +52,7 @@ const getMangaAuthor = async (id: string): Promise<string> => {
  * @param id - The MangaDex manga ID
  * @returns Detailed manga data including title, description, author, and cover
  */
-export const getMangaDetails = async (id: string): Promise<MangaData> => {
+export const getMangaDetails = async (id: string): Promise<MangaDetails> => {
   try {
     const request = await fetch(
       `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
@@ -67,10 +66,12 @@ export const getMangaDetails = async (id: string): Promise<MangaData> => {
     if (request.status !== 200) {
       const errorResp = await request.text();
 
-      throw `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`,
+      );
     }
 
-    const response = (await request.json()) as MangaResponse;
+    const response = await parseJSON<MangaResponse>(request);
     const {
       data: { attributes, relationships },
     } = response;
@@ -78,7 +79,7 @@ export const getMangaDetails = async (id: string): Promise<MangaData> => {
       ?.attributes?.fileName;
     const firstRelationship = relationships?.[0];
     if (!firstRelationship) {
-      throw '(getMangaDetails): No relationships found for manga';
+      throw new Error('(getMangaDetails): No relationships found for manga');
     }
     const author = await getMangaAuthor(firstRelationship.id);
 
@@ -92,8 +93,13 @@ export const getMangaDetails = async (id: string): Promise<MangaData> => {
       url: `https://mangadex.org/title/${id}`,
     };
   } catch (error) {
-    console.error(`[getMangaDetails] - ${error}`);
-    throw `[getMangaDetails] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[getMangaDetails] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[getMangaDetails] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -168,10 +174,12 @@ export const searchManga = async (
     if (request.status !== 200) {
       const errorResp = await request.text();
 
-      throw `(fetch): ${request.status} - ${request.statusText} (${title}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${request.status} - ${request.statusText} (${title}) - ${errorResp}`,
+      );
     }
 
-    const response = (await request.json()) as MangaSearchResponse;
+    const response = await parseJSON<MangaSearchResponse>(request);
 
     return response.data.map(manga => {
       const coverFile = manga.relationships?.find(
@@ -192,7 +200,12 @@ export const searchManga = async (
       };
     });
   } catch (error) {
-    console.error(`[searchManga] - ${error}`);
-    throw `[searchManga] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchManga] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchManga] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

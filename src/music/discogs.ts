@@ -14,9 +14,11 @@ const DISCOGS_BASE_URL = 'https://api.discogs.com';
  * Get the Discogs personal access token from environment variables
  */
 const getToken = (): string => {
-  const token = process.env.DISCOGS_TOKEN;
+  const token = process.env['DISCOGS_TOKEN'];
   if (!token) {
-    throw `(getToken): DISCOGS_TOKEN environment variable is not set`;
+    throw new Error(
+      '(getToken): DISCOGS_TOKEN environment variable is not set',
+    );
   }
   return token;
 };
@@ -49,13 +51,20 @@ const discogsFetch = async <T>(
 
     if (response.status !== 200) {
       const errorResp = await response.text();
-      throw `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
+      );
     }
 
-    return response.json() as Promise<T>;
+    return (await response.json()) as T;
   } catch (error) {
-    console.error(`(discogsFetch): ${error}`);
-    throw `(discogsFetch): ${error}`;
+    if (error instanceof Error) {
+      console.error(`(discogsFetch): ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(discogsFetch): ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -69,7 +78,7 @@ const searchDiscogs = async (
   const searchParams: Record<string, string | number> = {};
 
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null) {
+    if (typeof value === 'string' || typeof value === 'number') {
       // Map 'query' to the Discogs 'q' parameter
       const paramKey = key === 'query' ? 'q' : key;
       searchParams[paramKey] = value;
@@ -122,8 +131,13 @@ export const searchArtist = async (
       page: response.pagination.page,
     };
   } catch (error) {
-    console.error(`[searchArtist] - ${error}`);
-    throw `[searchArtist] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchArtist] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchArtist] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -173,8 +187,13 @@ export const searchAlbum = async (
       page: response.pagination.page,
     };
   } catch (error) {
-    console.error(`[searchAlbum] - ${error}`);
-    throw `[searchAlbum] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchAlbum] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchAlbum] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -221,7 +240,12 @@ export const searchTrack = async (
       page: response.pagination.page,
     };
   } catch (error) {
-    console.error(`[searchTrack] - ${error}`);
-    throw `[searchTrack] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchTrack] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchTrack] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

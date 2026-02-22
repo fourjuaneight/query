@@ -6,6 +6,7 @@ import type {
   BookSearchOptions,
   BookSearchResult,
 } from './typings';
+import { parseJSON } from '../common/helpers';
 
 const OPENLIBRARY_BASE_URL = 'https://openlibrary.org/api/volumes/brief';
 const OPENLIBRARY_SEARCH_URL = 'https://openlibrary.org/search.json';
@@ -32,13 +33,20 @@ const openLibraryFetch = async <T>(
 
     if (response.status !== 200) {
       const errorResp = await response.text();
-      throw `(fetch): ${response.status} - ${response.statusText} (${idType}/${idValue}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${response.status} - ${response.statusText} (${idType}/${idValue}) - ${errorResp}`,
+      );
     }
 
-    return response.json() as Promise<T>;
+    return (await response.json()) as T;
   } catch (error) {
-    console.error(`(openLibraryFetch): ${error}`);
-    throw `(openLibraryFetch): ${error}`;
+    if (error instanceof Error) {
+      console.error(`(openLibraryFetch): ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(openLibraryFetch): ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -147,8 +155,13 @@ export const queryBookByISBN = async (
 
     return normalizeBookData(record);
   } catch (error) {
-    console.error(`[queryBookByISBN] - ${error}`);
-    throw `[queryBookByISBN] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryBookByISBN] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryBookByISBN] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -185,14 +198,21 @@ export const searchBooksByTitle = async (
 
     if (response.status !== 200) {
       const errorResp = await response.text();
-      throw `(fetch): ${response.status} - ${response.statusText} - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${response.status} - ${response.statusText} - ${errorResp}`,
+      );
     }
 
-    const data = (await response.json()) as OpenLibrarySearchResponse;
+    const data = await parseJSON<OpenLibrarySearchResponse>(response);
 
     return data.docs.map(normalizeSearchDoc);
   } catch (error) {
-    console.error(`[searchBooksByTitle] - ${error}`);
-    throw `[searchBooksByTitle] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchBooksByTitle] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchBooksByTitle] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

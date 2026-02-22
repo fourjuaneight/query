@@ -83,8 +83,13 @@ export const queryTVShow = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.error(`[queryTVShow] - ${error}`);
-    throw `[queryTVShow] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryTVShow] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryTVShow] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -118,8 +123,13 @@ export const queryTVShowById = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.error(`[queryTVShowById] - ${error}`);
-    throw `[queryTVShowById] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryTVShowById] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryTVShowById] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -166,7 +176,12 @@ export const searchTVShows = async (
       page: response.page,
     };
   } catch (error) {
-    console.error(`[searchTVShows] - ${error}`);
-    throw `[searchTVShows] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchTVShows] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchTVShows] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

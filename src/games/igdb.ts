@@ -11,9 +11,11 @@ const IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload';
  * Get the IGDB Client ID from environment variables
  */
 const getClientId = (): string => {
-  const clientId = process.env.IGDB_CLIENT_ID;
+  const clientId = process.env['IGDB_CLIENT_ID'];
   if (!clientId) {
-    throw `(getClientId): IGDB_CLIENT_ID environment variable is not set`;
+    throw new Error(
+      '(getClientId): IGDB_CLIENT_ID environment variable is not set',
+    );
   }
   return clientId;
 };
@@ -22,9 +24,11 @@ const getClientId = (): string => {
  * Get the IGDB Access Token from environment variables
  */
 const getAccessToken = (): string => {
-  const token = process.env.IGDB_ACCESS_TOKEN;
+  const token = process.env['IGDB_ACCESS_TOKEN'];
   if (!token) {
-    throw `(getAccessToken): IGDB_ACCESS_TOKEN environment variable is not set`;
+    throw new Error(
+      '(getAccessToken): IGDB_ACCESS_TOKEN environment variable is not set',
+    );
   }
   return token;
 };
@@ -62,13 +66,20 @@ const igdbFetch = async <T>(endpoint: string, body: string): Promise<T> => {
 
     if (response.status !== 200) {
       const errorResp = await response.text();
-      throw `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
+      );
     }
 
-    return response.json() as Promise<T>;
+    return (await response.json()) as T;
   } catch (error) {
-    console.error(`(igdbFetch): ${error}`);
-    throw `(igdbFetch): ${error}`;
+    if (error instanceof Error) {
+      console.error(`(igdbFetch): ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(igdbFetch): ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -135,8 +146,13 @@ export const searchGames = async (
 
     return results.map(normalizeGameData);
   } catch (error) {
-    console.error(`[searchGames] - ${error}`);
-    throw `[searchGames] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchGames] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchGames] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -159,8 +175,13 @@ export const queryGame = async (title: string): Promise<GameData | null> => {
 
     return first;
   } catch (error) {
-    console.error(`[queryGame] - ${error}`);
-    throw `[queryGame] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryGame] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryGame] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -192,7 +213,12 @@ export const queryGameById = async (
 
     return normalizeGameData(first);
   } catch (error) {
-    console.error(`[queryGameById] - ${error}`);
-    throw `[queryGameById] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryGameById] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryGameById] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

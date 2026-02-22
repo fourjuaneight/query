@@ -82,8 +82,13 @@ export const queryMovie = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.error(`[queryMovie] - ${error}`);
-    throw `[queryMovie] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryMovie] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryMovie] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -116,8 +121,13 @@ export const queryMovieById = async (
       posterUrl: buildPosterUrl(details.poster_path),
     };
   } catch (error) {
-    console.error(`[queryMovieById] - ${error}`);
-    throw `[queryMovieById] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[queryMovieById] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[queryMovieById] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -163,7 +173,12 @@ export const searchMovies = async (
       page: response.page,
     };
   } catch (error) {
-    console.error(`[searchMovies] - ${error}`);
-    throw `[searchMovies] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[searchMovies] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[searchMovies] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

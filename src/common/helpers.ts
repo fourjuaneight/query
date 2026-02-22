@@ -6,9 +6,9 @@ import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
  * @returns The TMDB API key
  */
 export const getApiKey = (): string => {
-  const key = process.env.TMDB_KEY;
+  const key = process.env['TMDB_KEY'];
   if (!key) {
-    throw `(getApiKey): TMDB_KEY environment variable is not set`;
+    throw new Error('(getApiKey): TMDB_KEY environment variable is not set');
   }
   return key;
 };
@@ -54,12 +54,31 @@ export const tmdbFetch = async <T>(
     if (response.status !== 200) {
       const errorResp = await response.text();
 
-      throw `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`;
+      throw new Error(
+        `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
+      );
     }
 
-    return response.json() as Promise<T>;
+    return (await response.json()) as T;
   } catch (error) {
-    console.error(`(tmdbFetch): ${error}`);
-    throw `(tmdbFetch): ${error}`;
+    if (error instanceof Error) {
+      console.error(`(tmdbFetch): ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`(tmdbFetch): ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
+};
+
+/**
+ * Safely parse a JSON response body with a generic type assertion.
+ * Centralizes the untyped Response.json() → T conversion so all
+ * callers get properly typed data without per-call ESLint suppressions.
+ *
+ * @param response - The fetch Response to parse
+ * @returns Parsed JSON body typed as T
+ */
+export const parseJSON = async <T>(response: Response): Promise<T> => {
+  return (await response.json()) as T;
 };

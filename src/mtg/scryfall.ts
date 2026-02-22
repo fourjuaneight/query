@@ -1,10 +1,11 @@
 /* eslint-disable id-length */
-import {
+import type {
   MTGItem,
   RequestQuery,
   ScryfallError,
   ScryfallSearch,
 } from './typings.d';
+import { parseJSON } from '../common/helpers';
 
 const magicColors: Record<string, string> = {
   W: 'White',
@@ -50,16 +51,18 @@ export const getMTGCard = async (
     );
 
     if (request.status !== 200) {
-      throw `(fetch): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`;
+      throw new Error(
+        `(fetch): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`,
+      );
     }
 
-    const response = (await request.json()) as ScryfallSearch | ScryfallError;
+    const response = await parseJSON<ScryfallSearch | ScryfallError>(request);
 
     if (response.object === 'error') {
       const { details, warnings } = response as ScryfallError;
       const errMsg = warnings ? warnings.join(' - ') : details;
 
-      throw `(request): ${errMsg}`;
+      throw new Error(`(request): ${errMsg}`);
     }
 
     const cards = (response as ScryfallSearch).data.map(
@@ -105,8 +108,8 @@ export const getMTGCard = async (
           collector_number: parseInt(collector_number, 10),
           artist,
           released_at,
-          image: image_uris?.png || card_faces?.[0]?.image_uris?.png || '',
-          back: card_faces?.[1]?.image_uris?.png || null,
+          image: image_uris?.png ?? card_faces?.[0]?.image_uris?.png ?? '',
+          back: card_faces?.[1]?.image_uris?.png ?? null,
         };
 
         return item;
@@ -115,7 +118,12 @@ export const getMTGCard = async (
 
     return cards;
   } catch (error) {
-    console.error(`[getMTGCard] - ${error}`);
-    throw `[getMTGCard] - ${error}`;
+    if (error instanceof Error) {
+      console.error(`[getMTGCard] - ${error.message}`);
+      throw error;
+    }
+    const err = new Error(`[getMTGCard] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };

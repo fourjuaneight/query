@@ -169,3 +169,13 @@ export interface MangaSearchResult {
   status: string;
   cover: string | null;
 }
+
+export interface MangaDetails {
+  title: string;
+  description: string;
+  author: string;
+  year: number;
+  status: string;
+  cover: string;
+  url: string;
+}
