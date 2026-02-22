@@ -41,12 +41,9 @@ const openLibraryFetch = async <T>(
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(openLibraryFetch): ${error.message}`);
       throw error;
     }
-    const err = new Error(`(openLibraryFetch): ${String(error)}`);
-    console.error(err.message);
-    throw err;
+    throw new Error(`(openLibraryFetch): ${String(error)}`);
   }
 };
 

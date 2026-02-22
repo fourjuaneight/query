@@ -36,12 +36,9 @@ const getMangaAuthor = async (id: string): Promise<string> => {
     return response.data.attributes.name;
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(getMangaAuthor) - ${error.message}`);
       throw error;
     }
-    const err = new Error(`(getMangaAuthor) - ${String(error)}`);
-    console.error(err.message);
-    throw err;
+    throw new Error(`(getMangaAuthor): ${String(error)}`);
   }
 };
 
@@ -79,7 +76,7 @@ export const getMangaDetails = async (id: string): Promise<MangaDetails> => {
       ?.attributes?.fileName;
     const firstRelationship = relationships?.[0];
     if (!firstRelationship) {
-      throw new Error('(getMangaDetails): No relationships found for manga');
+      throw new Error('[getMangaDetails]: No relationships found for manga');
     }
     const author = await getMangaAuthor(firstRelationship.id);
 

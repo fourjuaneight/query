@@ -7,9 +7,11 @@ import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
  */
 export const getApiKey = (): string => {
   const key = process.env['TMDB_KEY'];
+
   if (!key) {
     throw new Error('(getApiKey): TMDB_KEY environment variable is not set');
   }
+
   return key;
 };
 
@@ -19,9 +21,8 @@ export const getApiKey = (): string => {
  * @param posterPath - The poster image path from TMDB
  * @returns Full poster URL or null if no path provided
  */
-export const buildPosterUrl = (posterPath: string | null): string | null => {
-  return posterPath ? `${TMDB_IMAGE_BASE_URL}${posterPath}` : null;
-};
+export const buildPosterUrl = (posterPath: string | null): string | null =>
+  posterPath ? `${TMDB_IMAGE_BASE_URL}${posterPath}` : null;
 
 /**
  * Make a request to the TMDB API
@@ -55,19 +56,17 @@ export const tmdbFetch = async <T>(
       const errorResp = await response.text();
 
       throw new Error(
-        `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
+        `(tmdbFetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
       );
     }
 
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(tmdbFetch): ${error.message}`);
-      throw error;
+      throw new Error(`(tmdbFetch): ${error.message}`);
     }
-    const err = new Error(`(tmdbFetch): ${String(error)}`);
-    console.error(err.message);
-    throw err;
+
+    throw new Error(`(tmdbFetch): ${String(error)}`);
   }
 };
 
@@ -79,6 +78,5 @@ export const tmdbFetch = async <T>(
  * @param response - The fetch Response to parse
  * @returns Parsed JSON body typed as T
  */
-export const parseJSON = async <T>(response: Response): Promise<T> => {
-  return (await response.json()) as T;
-};
+export const parseJSON = async <T>(response: Response): Promise<T> =>
+  (await response.json()) as T;

@@ -74,12 +74,9 @@ const igdbFetch = async <T>(endpoint: string, body: string): Promise<T> => {
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(igdbFetch): ${error.message}`);
       throw error;
     }
-    const err = new Error(`(igdbFetch): ${String(error)}`);
-    console.error(err.message);
-    throw err;
+    throw new Error(`(igdbFetch): ${String(error)}`);
   }
 };
 

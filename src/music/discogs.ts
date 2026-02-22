@@ -59,12 +59,9 @@ const discogsFetch = async <T>(
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(discogsFetch): ${error.message}`);
       throw error;
     }
-    const err = new Error(`(discogsFetch): ${String(error)}`);
-    console.error(err.message);
-    throw err;
+    throw new Error(`(discogsFetch): ${String(error)}`);
   }
 };
 

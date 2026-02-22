@@ -40,12 +40,9 @@ const searchCards = async (
     return parseJSON<TCGdexCardBrief[]>(request);
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(searchCards) - ${error.message}`);
       throw error;
     }
-    const err = new Error(`(searchCards) - ${String(error)}`);
-    console.error(err.message);
-    throw err;
+    throw new Error(`(searchCards): ${String(error)}`);
   }
 };
 
@@ -71,12 +68,9 @@ const getCardDetails = async (id: string): Promise<TCGdexCard> => {
     return parseJSON<TCGdexCard>(request);
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`(getCardDetails) - ${error.message}`);
       throw error;
     }
-    const err = new Error(`(getCardDetails) - ${String(error)}`);
-    console.error(err.message);
-    throw err;
+    throw new Error(`(getCardDetails): ${String(error)}`);
   }
 };
 
