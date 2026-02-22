@@ -41,13 +41,20 @@ const discogsFetch = async <T>(
       }
     }
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Discogs token=${token}`,
-        'User-Agent': 'QueryAPI/1.0',
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Discogs token=${token}`,
+          'User-Agent': 'QueryAPI/1.0',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `(discogsFetch): Network error requesting ${endpoint} - ${String(networkError)}`,
+      );
+    }
 
     if (response.status !== 200) {
       const errorResp = await response.text();

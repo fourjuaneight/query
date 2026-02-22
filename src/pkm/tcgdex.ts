@@ -24,11 +24,18 @@ const searchCards = async (
       url.searchParams.set('set.id', set);
     }
 
-    const request = await fetch(url.toString(), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let request: Response;
+    try {
+      request = await fetch(url.toString(), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `(searchCards): Network error searching for "${name}" - ${String(networkError)}`,
+      );
+    }
 
     if (request.status !== 200) {
       const errorResp = await request.text();
@@ -52,11 +59,18 @@ const searchCards = async (
  */
 const getCardDetails = async (id: string): Promise<TCGdexCard> => {
   try {
-    const request = await fetch(`${API}/cards/${id}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let request: Response;
+    try {
+      request = await fetch(`${API}/cards/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `(getCardDetails): Network error fetching card ${id} - ${String(networkError)}`,
+      );
+    }
 
     if (request.status !== 200) {
       const errorResp = await request.text();

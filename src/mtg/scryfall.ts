@@ -18,6 +18,13 @@ const magicColors: Record<string, string> = {
 const escapeText = (text: string): string => text.replace(/\n/g, '\\n');
 
 /**
+ * Type guard to check if a Scryfall response is an error
+ */
+const isScryfallError = (
+  response: ScryfallSearch | ScryfallError,
+): response is ScryfallError => response.object === 'error';
+
+/**
  * Search Scryfall database for cards matching the given search pattern.
  * DOCS: https://scryfall.com/docs/api/cards/search
  * REF: https://scryfall.com/docs/syntax
@@ -40,15 +47,22 @@ export const getMTGCard = async (
       query += `+cn:${queryTerm.number}`;
     }
 
-    const request = await fetch(
-      `https://api.scryfall.com/cards/search?order=set&q=${query}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+    let request: Response;
+    try {
+      request = await fetch(
+        `https://api.scryfall.com/cards/search?order=set&q=${query}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      },
-    );
+      );
+    } catch (networkError) {
+      throw new Error(
+        `[getMTGCard]: Network error searching for "${queryTerm.name}" - ${String(networkError)}`,
+      );
+    }
 
     if (request.status !== 200) {
       throw new Error(
@@ -58,14 +72,15 @@ export const getMTGCard = async (
 
     const response = await parseJSON<ScryfallSearch | ScryfallError>(request);
 
-    if (response.object === 'error') {
-      const { details, warnings } = response as ScryfallError;
-      const errMsg = warnings ? warnings.join(' - ') : details;
+    if (isScryfallError(response)) {
+      const errMsg = response.warnings
+        ? response.warnings.join(' - ')
+        : response.details;
 
       throw new Error(`(request): ${errMsg}`);
     }
 
-    const cards = (response as ScryfallSearch).data.map(
+    const cards = response.data.map(
       ({
         artist,
         card_faces,

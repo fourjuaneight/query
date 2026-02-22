@@ -54,15 +54,22 @@ const igdbFetch = async <T>(endpoint: string, body: string): Promise<T> => {
     const clientId = getClientId();
     const accessToken = getAccessToken();
 
-    const response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Client-ID': clientId,
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Client-ID': clientId,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body,
+      });
+    } catch (networkError) {
+      throw new Error(
+        `(igdbFetch): Network error requesting ${endpoint} - ${String(networkError)}`,
+      );
+    }
 
     if (response.status !== 200) {
       const errorResp = await response.text();

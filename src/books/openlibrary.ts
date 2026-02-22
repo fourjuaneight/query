@@ -25,11 +25,18 @@ const openLibraryFetch = async <T>(
   try {
     const url = `${OPENLIBRARY_BASE_URL}/${idType}/${idValue}.json`;
 
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `(openLibraryFetch): Network error requesting ${idType}/${idValue} - ${String(networkError)}`,
+      );
+    }
 
     if (response.status !== 200) {
       const errorResp = await response.text();
@@ -38,7 +45,7 @@ const openLibraryFetch = async <T>(
       );
     }
 
-    return (await response.json()) as T;
+    return parseJSON<T>(response);
   } catch (error) {
     if (error instanceof Error) {
       throw error;
@@ -187,11 +194,18 @@ export const searchBooksByTitle = async (
       url.searchParams.set('lang', options.language);
     }
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `[searchBooksByTitle]: Network error searching for "${title}" - ${String(networkError)}`,
+      );
+    }
 
     if (response.status !== 200) {
       const errorResp = await response.text();

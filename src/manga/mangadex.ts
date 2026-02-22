@@ -17,11 +17,18 @@ const ASSETS = 'https://uploads.mangadex.org';
  */
 const getMangaAuthor = async (id: string): Promise<string> => {
   try {
-    const request = await fetch(`${API}/author/${id}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let request: Response;
+    try {
+      request = await fetch(`${API}/author/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `(getMangaAuthor): Network error fetching author ${id} - ${String(networkError)}`,
+      );
+    }
 
     if (request.status !== 200) {
       const errorResp = await request.text();
@@ -51,14 +58,21 @@ const getMangaAuthor = async (id: string): Promise<string> => {
  */
 export const getMangaDetails = async (id: string): Promise<MangaDetails> => {
   try {
-    const request = await fetch(
-      `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
+    let request: Response;
+    try {
+      request = await fetch(
+        `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      },
-    );
+      );
+    } catch (networkError) {
+      throw new Error(
+        `[getMangaDetails]: Network error fetching manga ${id} - ${String(networkError)}`,
+      );
+    }
 
     if (request.status !== 200) {
       const errorResp = await request.text();
@@ -162,11 +176,18 @@ export const searchManga = async (
       }
     }
 
-    const request = await fetch(`${API}/manga?${params.toString()}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let request: Response;
+    try {
+      request = await fetch(`${API}/manga?${params.toString()}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `[searchManga]: Network error searching for "${title}" - ${String(networkError)}`,
+      );
+    }
 
     if (request.status !== 200) {
       const errorResp = await request.text();

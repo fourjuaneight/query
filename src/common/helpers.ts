@@ -46,11 +46,18 @@ export const tmdbFetch = async <T>(
       }
     }
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (networkError) {
+      throw new Error(
+        `[tmdbFetch]: Network error requesting ${endpoint} - ${String(networkError)}`,
+      );
+    }
 
     if (response.status !== 200) {
       const errorResp = await response.text();
@@ -60,7 +67,7 @@ export const tmdbFetch = async <T>(
       );
     }
 
-    return (await response.json()) as T;
+    return parseJSON<T>(response);
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`(tmdbFetch): ${error.message}`);
