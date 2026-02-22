@@ -161,7 +161,6 @@ export interface MangaSearchOptions {
 }
 
 export interface MangaSearchResult {
-  id: string;
   title: string;
   description: string;
   year: number | null;

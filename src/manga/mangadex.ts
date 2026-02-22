@@ -174,7 +174,6 @@ export const searchManga = async (
       )?.attributes?.fileName;
 
       return {
-        id: manga.id,
         title:
           manga.attributes.title.en ?? Object.values(manga.attributes.title)[0],
         description: manga.attributes.description?.en ?? '',
