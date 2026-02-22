@@ -6,7 +6,7 @@ import prettierConf from './prettier.config.js';
 
 export default tseslint.config(
   eslint.configs.recommended,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
   prettierConfig,
   {
     ignores: ['dist/**', 'node_modules/**'],
@@ -39,15 +39,24 @@ export default tseslint.config(
       ],
       'no-case-declarations': 'off',
       'no-nested-ternary': 'off',
-      'no-throw-literal': 'off',
+      'no-throw-literal': 'error',
       'prettier/prettier': ['error', prettierConf],
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/explicit-function-return-type': [
+        'error',
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+        },
+      ],
+      '@typescript-eslint/explicit-module-boundary-types': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },
       ],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/strict-boolean-expressions': 'off',
     },
   },
 );
