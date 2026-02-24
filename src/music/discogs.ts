@@ -11,28 +11,15 @@ import type {
 const DISCOGS_BASE_URL = 'https://api.discogs.com';
 
 /**
- * Get the Discogs personal access token from environment variables
- */
-const getToken = (): string => {
-  const token = process.env['DISCOGS_TOKEN'];
-  if (!token) {
-    throw new Error(
-      '(getToken): DISCOGS_TOKEN environment variable is not set',
-    );
-  }
-  return token;
-};
-
-/**
  * Make a request to the Discogs API
  * DOCS: https://www.discogs.com/developers
  */
 const discogsFetch = async <T>(
+  token: string,
   endpoint: string,
   params: Record<string, string | number> = {},
 ): Promise<T> => {
   try {
-    const token = getToken();
     const url = new URL(`${DISCOGS_BASE_URL}${endpoint}`);
 
     for (const [key, value] of Object.entries(params)) {
@@ -77,6 +64,7 @@ const discogsFetch = async <T>(
  * DOCS: https://www.discogs.com/developers#page:database,header:database-search
  */
 const searchDiscogs = async (
+  token: string,
   params: DiscogsSearchParams,
 ): Promise<DiscogsSearchResponse> => {
   const searchParams: Record<string, string | number> = {};
@@ -89,7 +77,7 @@ const searchDiscogs = async (
     }
   }
 
-  return discogsFetch<DiscogsSearchResponse>('/database/search', searchParams);
+  return discogsFetch<DiscogsSearchResponse>(token, '/database/search', searchParams);
 };
 
 /**
@@ -114,11 +102,12 @@ const parseTitle = (title: string): { artist: string; name: string } => {
  * @returns Paginated list of matching artists
  */
 export const searchArtist = async (
+  token: string,
   name: string,
   options: Pick<DiscogsQueryOptions, 'page' | 'perPage'> = {},
 ): Promise<PaginatedResults<ArtistSearchResult>> => {
   try {
-    const response = await searchDiscogs({
+    const response = await searchDiscogs(token, {
       query: name,
       type: 'artist',
       per_page: options.perPage ?? 10,
@@ -154,11 +143,12 @@ export const searchArtist = async (
  * @returns Paginated list of matching albums
  */
 export const searchAlbum = async (
+  token: string,
   title: string,
   options: DiscogsQueryOptions & { artist?: string } = {},
 ): Promise<PaginatedResults<AlbumSearchResult>> => {
   try {
-    const response = await searchDiscogs({
+    const response = await searchDiscogs(token, {
       release_title: title,
       type: 'master',
       ...(options.artist && { artist: options.artist }),
@@ -209,11 +199,12 @@ export const searchAlbum = async (
  * @returns Paginated list of releases containing the track
  */
 export const searchTrack = async (
+  token: string,
   track: string,
   options: DiscogsQueryOptions & { artist?: string } = {},
 ): Promise<PaginatedResults<TrackSearchResult>> => {
   try {
-    const response = await searchDiscogs({
+    const response = await searchDiscogs(token, {
       track,
       type: 'release',
       ...(options.artist && { artist: options.artist }),

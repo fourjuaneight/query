@@ -1,9 +1,12 @@
 import type { Context } from 'hono';
 
+import type { Bindings } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import { queryMovie, queryMovieById, searchMovies } from './tmdb';
 
-export const handleMovieQuery = async (ctx: Context): Promise<Response> => {
+export const handleMovieQuery = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const title = ctx.req.query('title');
   if (!title) {
     return jsonError(ctx, 'Missing required query parameter: title');
@@ -13,7 +16,7 @@ export const handleMovieQuery = async (ctx: Context): Promise<Response> => {
   const year = ctx.req.query('year');
 
   try {
-    const result = await queryMovie(title, {
+    const result = await queryMovie(ctx.env.TMDB_KEY, title, {
       ...(language && { language }),
       ...(year && { year: parseInt(year, 10) }),
     });
@@ -27,7 +30,9 @@ export const handleMovieQuery = async (ctx: Context): Promise<Response> => {
   }
 };
 
-export const handleMovieById = async (ctx: Context): Promise<Response> => {
+export const handleMovieById = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const id = ctx.req.param('id');
   const movieId = parseInt(id, 10);
   if (isNaN(movieId)) {
@@ -37,7 +42,7 @@ export const handleMovieById = async (ctx: Context): Promise<Response> => {
   const language = ctx.req.query('language');
 
   try {
-    const result = await queryMovieById(movieId, language);
+    const result = await queryMovieById(ctx.env.TMDB_KEY, movieId, language);
     return jsonSuccess(ctx, result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -45,7 +50,9 @@ export const handleMovieById = async (ctx: Context): Promise<Response> => {
   }
 };
 
-export const handleMovieSearch = async (ctx: Context): Promise<Response> => {
+export const handleMovieSearch = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const query = ctx.req.query('query');
   if (!query) {
     return jsonError(ctx, 'Missing required query parameter: query');
@@ -56,7 +63,7 @@ export const handleMovieSearch = async (ctx: Context): Promise<Response> => {
   const page = ctx.req.query('page');
 
   try {
-    const results = await searchMovies(query, {
+    const results = await searchMovies(ctx.env.TMDB_KEY, query, {
       ...(language && { language }),
       ...(year && { year: parseInt(year, 10) }),
       ...(page && { page: parseInt(page, 10) }),

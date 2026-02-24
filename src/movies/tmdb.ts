@@ -12,10 +12,11 @@ import type {
  * DOCS: https://developer.themoviedb.org/reference/search-movie
  */
 const searchMovie = async (
+  apiKey: string,
   query: string,
   options: TMDBQueryOptions = {},
 ): Promise<TMDBMovieSearchResponse> => {
-  return tmdbFetch<TMDBMovieSearchResponse>('/search/movie', {
+  return tmdbFetch<TMDBMovieSearchResponse>(apiKey, '/search/movie', {
     query,
     language: options.language ?? 'en-US',
     page: options.page ?? 1,
@@ -28,10 +29,11 @@ const searchMovie = async (
  * DOCS: https://developer.themoviedb.org/reference/movie-details
  */
 const getMovieDetails = async (
+  apiKey: string,
   movieId: number,
   language = 'en-US',
 ): Promise<TMDBMovieDetails> => {
-  return tmdbFetch<TMDBMovieDetails>(`/movie/${movieId}`, {
+  return tmdbFetch<TMDBMovieDetails>(apiKey, `/movie/${movieId}`, {
     language,
     append_to_response: 'credits',
   });
@@ -46,12 +48,13 @@ const getMovieDetails = async (
  * @returns Normalized movie data or null if not found
  */
 export const queryMovie = async (
+  apiKey: string,
   title: string,
   options: TMDBQueryOptions = {},
 ): Promise<MovieData | null> => {
   try {
     // Search for the movie
-    const searchResults = await searchMovie(title, options);
+    const searchResults = await searchMovie(apiKey, title, options);
 
     if (searchResults.results.length === 0) {
       return null;
@@ -65,7 +68,7 @@ export const queryMovie = async (
     const movieId = firstResult.id;
 
     // Fetch detailed information with credits
-    const details = await getMovieDetails(movieId, options.language);
+    const details = await getMovieDetails(apiKey, movieId, options.language);
 
     // Extract director from crew
     const director =
@@ -101,11 +104,12 @@ export const queryMovie = async (
  * @returns Normalized movie data
  */
 export const queryMovieById = async (
+  apiKey: string,
   movieId: number,
   language = 'en-US',
 ): Promise<MovieData> => {
   try {
-    const details = await getMovieDetails(movieId, language);
+    const details = await getMovieDetails(apiKey, movieId, language);
 
     const director =
       details.credits?.crew.find(member => member.job === 'Director')?.name ??
@@ -140,15 +144,16 @@ export const queryMovieById = async (
  * @returns Array of search results with basic info
  */
 export const searchMovies = async (
+  apiKey: string,
   query: string,
   options: TMDBQueryOptions = {},
 ): Promise<MovieSearchResponse> => {
   try {
-    const response = await searchMovie(query, options);
+    const response = await searchMovie(apiKey, query, options);
 
     const results = await Promise.all(
       response.results.map(async movie => {
-        const details = await getMovieDetails(movie.id, options.language);
+        const details = await getMovieDetails(apiKey, movie.id, options.language);
 
         const director =
           details.credits?.crew.find(member => member.job === 'Director')

@@ -9,28 +9,15 @@ import { parseJSON } from '../common/helpers';
 const GITHUB_API_URL = 'https://api.github.com';
 
 /**
- * Get the GitHub personal access token from environment variables
- */
-const getToken = (): string => {
-  const token = process.env['GITHUB_TOKEN'];
-
-  if (!token) {
-    throw new Error('(getToken): GITHUB_TOKEN environment variable is not set');
-  }
-
-  return token;
-};
-
-/**
  * Make a request to the GitHub API
  * DOCS: https://docs.github.com/en/rest
  */
 const githubFetch = async <T>(
+  token: string,
   endpoint: string,
   params: Record<string, string | number> = {},
 ): Promise<T> => {
   try {
-    const token = getToken();
     const url = new URL(`${GITHUB_API_URL}${endpoint}`);
 
     for (const [key, value] of Object.entries(params)) {
@@ -97,6 +84,7 @@ const normalizeRepoData = (
  * @returns Paginated list of matching repositories
  */
 export const searchRepos = async (
+  token: string,
   query: string,
   options: GitHubQueryOptions = {},
 ): Promise<RepoSearchResponse> => {
@@ -106,6 +94,7 @@ export const searchRepos = async (
       : query;
 
     const response = await githubFetch<GitHubSearchResponse>(
+      token,
       '/search/repositories',
       {
         ['q']: searchQuery,
@@ -138,9 +127,12 @@ export const searchRepos = async (
  * @param name - The repository name to search for
  * @returns Normalized repo data or null if not found
  */
-export const queryRepo = async (name: string): Promise<RepoData | null> => {
+export const queryRepo = async (
+  token: string,
+  name: string,
+): Promise<RepoData | null> => {
   try {
-    const response = await searchRepos(name, { perPage: 1 });
+    const response = await searchRepos(token, name, { perPage: 1 });
 
     if (response.results.length === 0) {
       return null;

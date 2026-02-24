@@ -1,9 +1,12 @@
 import type { Context } from 'hono';
 
+import type { Bindings } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import { getMangaDetails, searchManga } from './mangadex';
 
-export const handleMangaDetails = async (ctx: Context): Promise<Response> => {
+export const handleMangaDetails = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const id = ctx.req.param('id');
   if (!id) {
     return jsonError(ctx, 'Missing required parameter: id');
@@ -18,7 +21,9 @@ export const handleMangaDetails = async (ctx: Context): Promise<Response> => {
   }
 };
 
-export const handleMangaSearch = async (ctx: Context): Promise<Response> => {
+export const handleMangaSearch = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const title = ctx.req.query('title');
   if (!title) {
     return jsonError(ctx, 'Missing required query parameter: title');

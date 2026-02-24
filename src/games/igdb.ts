@@ -4,34 +4,13 @@ import type {
   GameData,
 } from './typings';
 
+interface IGDBEnv {
+  IGDB_CLIENT_ID: string;
+  IGDB_ACCESS_TOKEN: string;
+}
+
 const IGDB_BASE_URL = 'https://api.igdb.com/v4';
 const IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload';
-
-/**
- * Get the IGDB Client ID from environment variables
- */
-const getClientId = (): string => {
-  const clientId = process.env['IGDB_CLIENT_ID'];
-  if (!clientId) {
-    throw new Error(
-      '(getClientId): IGDB_CLIENT_ID environment variable is not set',
-    );
-  }
-  return clientId;
-};
-
-/**
- * Get the IGDB Access Token from environment variables
- */
-const getAccessToken = (): string => {
-  const token = process.env['IGDB_ACCESS_TOKEN'];
-  if (!token) {
-    throw new Error(
-      '(getAccessToken): IGDB_ACCESS_TOKEN environment variable is not set',
-    );
-  }
-  return token;
-};
 
 /**
  * Build a cover image URL from an image_id
@@ -49,19 +28,20 @@ const buildCoverUrl = (
  * Make a POST request to the IGDB API using Apicalypse query syntax
  * DOCS: https://api-docs.igdb.com/#about
  */
-const igdbFetch = async <T>(endpoint: string, body: string): Promise<T> => {
+const igdbFetch = async <T>(
+  env: IGDBEnv,
+  endpoint: string,
+  body: string,
+): Promise<T> => {
   try {
-    const clientId = getClientId();
-    const accessToken = getAccessToken();
-
     let response: Response;
     try {
       response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
-          'Client-ID': clientId,
-          Authorization: `Bearer ${accessToken}`,
+          'Client-ID': env.IGDB_CLIENT_ID,
+          Authorization: `Bearer ${env.IGDB_ACCESS_TOKEN}`,
         },
         body,
       });
@@ -131,6 +111,7 @@ const normalizeGameData = (game: IGDBGameSearchResult): GameData => {
  * @returns Array of normalized game data
  */
 export const searchGames = async (
+  env: IGDBEnv,
   query: string,
   options: IGDBQueryOptions = {},
 ): Promise<GameData[]> => {
@@ -146,7 +127,11 @@ export const searchGames = async (
       limit ${limit};
     `.trim();
 
-    const results = await igdbFetch<IGDBGameSearchResult[]>('/games', body);
+    const results = await igdbFetch<IGDBGameSearchResult[]>(
+      env,
+      '/games',
+      body,
+    );
 
     return results.map(normalizeGameData);
   } catch (error) {
@@ -166,9 +151,12 @@ export const searchGames = async (
  * @param title - The game title to search for
  * @returns Normalized game data or null if not found
  */
-export const queryGame = async (title: string): Promise<GameData | null> => {
+export const queryGame = async (
+  env: IGDBEnv,
+  title: string,
+): Promise<GameData | null> => {
   try {
-    const results = await searchGames(title, { limit: 1 });
+    const results = await searchGames(env, title, { limit: 1 });
 
     if (results.length === 0) {
       return null;
@@ -196,6 +184,7 @@ export const queryGame = async (title: string): Promise<GameData | null> => {
  * @returns Normalized game data or null if not found
  */
 export const queryGameById = async (
+  env: IGDBEnv,
   gameId: number,
 ): Promise<GameData | null> => {
   try {
@@ -206,7 +195,11 @@ export const queryGameById = async (
       where id = ${gameId};
     `.trim();
 
-    const results = await igdbFetch<IGDBGameSearchResult[]>('/games', body);
+    const results = await igdbFetch<IGDBGameSearchResult[]>(
+      env,
+      '/games',
+      body,
+    );
 
     if (results.length === 0) {
       return null;

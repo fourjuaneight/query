@@ -1,22 +1,8 @@
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
+import type { Bindings } from './typings';
 import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
-
-/**
- * Get the TMDB API key from environment variables
- *
- * @returns The TMDB API key
- */
-export const getApiKey = (): string => {
-  const key = process.env['TMDB_KEY'];
-
-  if (!key) {
-    throw new Error('(getApiKey): TMDB_KEY environment variable is not set');
-  }
-
-  return key;
-};
 
 /**
  * Build full poster URL from path
@@ -30,16 +16,17 @@ export const buildPosterUrl = (posterPath: string | null): string | null =>
 /**
  * Make a request to the TMDB API
  *
+ * @param apiKey - The TMDB API key from env bindings
  * @param endpoint - The API endpoint path
  * @param params - Optional query parameters
  * @returns Parsed JSON response
  */
 export const tmdbFetch = async <T>(
+  apiKey: string,
   endpoint: string,
   params: Record<string, string | number> = {},
 ): Promise<T> => {
   try {
-    const apiKey = getApiKey();
     const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
     url.searchParams.set('api_key', apiKey);
 
@@ -66,17 +53,19 @@ export const tmdbFetch = async <T>(
       const errorResp = await response.text();
 
       throw new Error(
-        `(tmdbFetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
+        `[tmdbFetch]: ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
       );
     }
 
     return parseJSON<T>(response);
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`(tmdbFetch): ${error.message}`);
+      console.error(`[tmdbFetch] - ${error.message}`);
+      throw error;
     }
-
-    throw new Error(`(tmdbFetch): ${String(error)}`);
+    const err = new Error(`[tmdbFetch] - ${String(error)}`);
+    console.error(err.message);
+    throw err;
   }
 };
 
@@ -94,14 +83,16 @@ export const parseJSON = async <T>(response: Response): Promise<T> =>
 /**
  * Standard JSON success response.
  */
-export const jsonSuccess = (ctx: Context, data: unknown): Response =>
-  ctx.json({ success: true, data });
+export const jsonSuccess = (
+  ctx: Context<{ Bindings: Bindings }>,
+  data: unknown,
+): Response => ctx.json({ success: true, data });
 
 /**
  * Standard JSON error response.
  */
 export const jsonError = (
-  ctx: Context,
+  ctx: Context<{ Bindings: Bindings }>,
   message: string,
   status: ContentfulStatusCode = 400,
 ): Response => ctx.json({ success: false, error: message }, status);

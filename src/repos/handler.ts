@@ -1,9 +1,12 @@
 import type { Context } from 'hono';
 
+import type { Bindings } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import { searchRepos, queryRepo } from './github';
 
-export const handleRepoSearch = async (ctx: Context): Promise<Response> => {
+export const handleRepoSearch = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const query = ctx.req.query('query');
   if (!query) {
     return jsonError(ctx, 'Missing required query parameter: query');
@@ -21,7 +24,7 @@ export const handleRepoSearch = async (ctx: Context): Promise<Response> => {
   const perPage = ctx.req.query('per_page');
 
   try {
-    const results = await searchRepos(query, {
+    const results = await searchRepos(ctx.env.GITHUB_TOKEN, query, {
       ...(language && { language }),
       ...(sort && { sort }),
       ...(order && { order }),
@@ -35,14 +38,16 @@ export const handleRepoSearch = async (ctx: Context): Promise<Response> => {
   }
 };
 
-export const handleRepoQuery = async (ctx: Context): Promise<Response> => {
+export const handleRepoQuery = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const name = ctx.req.query('name');
   if (!name) {
     return jsonError(ctx, 'Missing required query parameter: name');
   }
 
   try {
-    const result = await queryRepo(name);
+    const result = await queryRepo(ctx.env.GITHUB_TOKEN, name);
     if (!result) {
       return jsonError(ctx, `No repo found for name: ${name}`, 404);
     }

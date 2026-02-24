@@ -1,9 +1,12 @@
 import type { Context } from 'hono';
 
+import type { Bindings } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import { getPKMCard } from './tcgdex';
 
-export const handlePKMCard = async (ctx: Context): Promise<Response> => {
+export const handlePKMCard = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const name = ctx.req.query('name');
   if (!name) {
     return jsonError(ctx, 'Missing required query parameter: name');

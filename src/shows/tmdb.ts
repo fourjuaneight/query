@@ -12,10 +12,11 @@ import type {
  * DOCS: https://developer.themoviedb.org/reference/search-tv
  */
 const searchTVShow = async (
+  apiKey: string,
   query: string,
   options: TMDBQueryOptions = {},
 ): Promise<TMDBTVSearchResponse> => {
-  return tmdbFetch<TMDBTVSearchResponse>('/search/tv', {
+  return tmdbFetch<TMDBTVSearchResponse>(apiKey, '/search/tv', {
     query,
     language: options.language ?? 'en-US',
     page: options.page ?? 1,
@@ -28,10 +29,11 @@ const searchTVShow = async (
  * DOCS: https://developer.themoviedb.org/reference/tv-series-details
  */
 const getTVShowDetails = async (
+  apiKey: string,
   seriesId: number,
   language = 'en-US',
 ): Promise<TMDBTVDetails> => {
-  return tmdbFetch<TMDBTVDetails>(`/tv/${seriesId}`, {
+  return tmdbFetch<TMDBTVDetails>(apiKey, `/tv/${seriesId}`, {
     language,
     append_to_response: 'aggregate_credits',
   });
@@ -46,12 +48,13 @@ const getTVShowDetails = async (
  * @returns Normalized TV show data or null if not found
  */
 export const queryTVShow = async (
+  apiKey: string,
   title: string,
   options: TMDBQueryOptions = {},
 ): Promise<TVShowData | null> => {
   try {
     // Search for the TV show
-    const searchResults = await searchTVShow(title, options);
+    const searchResults = await searchTVShow(apiKey, title, options);
 
     if (searchResults.results.length === 0) {
       return null;
@@ -65,7 +68,7 @@ export const queryTVShow = async (
     const seriesId = firstResult.id;
 
     // Fetch detailed information with aggregate credits
-    const details = await getTVShowDetails(seriesId, options.language);
+    const details = await getTVShowDetails(apiKey, seriesId, options.language);
 
     // Extract creators
     const creators = details.created_by.map(creator => creator.name);
@@ -102,11 +105,12 @@ export const queryTVShow = async (
  * @returns Normalized TV show data
  */
 export const queryTVShowById = async (
+  apiKey: string,
   seriesId: number,
   language = 'en-US',
 ): Promise<TVShowData> => {
   try {
-    const details = await getTVShowDetails(seriesId, language);
+    const details = await getTVShowDetails(apiKey, seriesId, language);
 
     const creators = details.created_by.map(creator => creator.name);
 
@@ -142,15 +146,16 @@ export const queryTVShowById = async (
  * @returns Array of search results with basic info
  */
 export const searchTVShows = async (
+  apiKey: string,
   query: string,
   options: TMDBQueryOptions = {},
 ): Promise<TVShowSearchResponse> => {
   try {
-    const response = await searchTVShow(query, options);
+    const response = await searchTVShow(apiKey, query, options);
 
     const results = await Promise.all(
       response.results.map(async show => {
-        const details = await getTVShowDetails(show.id, options.language);
+        const details = await getTVShowDetails(apiKey, show.id, options.language);
 
         const creators = details.created_by.map(creator => creator.name);
 

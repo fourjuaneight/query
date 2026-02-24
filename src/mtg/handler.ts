@@ -1,9 +1,12 @@
 import type { Context } from 'hono';
 
+import type { Bindings } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import { getMTGCard } from './scryfall';
 
-export const handleMTGCard = async (ctx: Context): Promise<Response> => {
+export const handleMTGCard = async (
+  ctx: Context<{ Bindings: Bindings }>,
+): Promise<Response> => {
   const name = ctx.req.query('name');
   if (!name) {
     return jsonError(ctx, 'Missing required query parameter: name');

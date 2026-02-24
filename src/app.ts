@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
+import type { Bindings } from './common/typings';
 import { handleBookByISBN, handleBookSearch } from './books/handler';
 import {
   handleGameSearch,
@@ -28,7 +29,7 @@ import {
   handleTVShowSearch,
 } from './shows/handler';
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Bindings }>();
 
 // Middleware
 app.use('*', logger());
