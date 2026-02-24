@@ -186,6 +186,10 @@ export const searchBooksByTitle = async (
     const url = new URL(OPENLIBRARY_SEARCH_URL);
     url.searchParams.set('title', title);
     url.searchParams.set('limit', String(options.limit ?? 10));
+    url.searchParams.set(
+      'fields',
+      'title,subtitle,author_name,first_publish_year,publish_year,cover_i,isbn,publisher,subject,language,number_of_pages_median',
+    );
 
     if (options.page) {
       url.searchParams.set('page', String(options.page));

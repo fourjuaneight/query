@@ -114,7 +114,7 @@ export interface BookSearchResult {
   firstPublishYear: number | null;
   publishers: string[];
   pageCount: number | null;
-  genre: string[];
+  genre?: string[];
   isbn10: string | null;
   isbn13: string | null;
   coverUrl: string | null;
@@ -122,7 +122,7 @@ export interface BookSearchResult {
 
 // Search API Types
 export interface OpenLibrarySearchDoc {
-  key: string;
+  key?: string;
   title: string;
   subtitle?: string;
   author_name?: string[];
@@ -143,10 +143,20 @@ export interface OpenLibrarySearchDoc {
 }
 
 export interface OpenLibrarySearchResponse {
+  numFound: number;
   start: number;
+  numFoundExact: boolean;
   num_found: number;
-  numFound?: number;
+  documentation_url: string;
+  q: string;
+  offset: number | null;
   docs: OpenLibrarySearchDoc[];
+}
+
+export interface BookSearchResponse {
+  totalResults: number;
+  start: number;
+  results: BookSearchResult[];
 }
 
 export interface BookSearchOptions {
