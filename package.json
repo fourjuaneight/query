@@ -1,14 +1,15 @@
 {
   "name": "query",
   "version": "1.0.0",
-  "description": "",
+  "description": "Wrappers around frequently used 3rd-party APIs.",
   "main": "dist/worker.js",
   "scripts": {
-    "build": "esbuild --define:process.env.NODE_ENV=\\\"production\\\" src/index.ts --minify --bundle --format=esm --outfile=dist/worker.js",
+    "build": "esbuild src/app.ts --bundle --outfile=dist/worker.js --format=esm --target=esnext",
     "clean": "rm -rf dist",
     "clean:node": "rm -rf node_modules",
+    "deploy": "wrangler deploy",
     "dev": "wrangler dev src/app.ts",
-    "deploy": "wrangler deploy src/app.ts",
+    "dev:local": "npx tsx --env-file .env src/server.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint --fix \"src/**/*.ts\""
   },
@@ -27,6 +28,7 @@
     }
   },
   "dependencies": {
+    "@hono/node-server": "^1.14.1",
     "hono": "^4.11.4"
   },
   "devDependencies": {
@@ -41,7 +43,9 @@
     "lint-staged": "^16.2.7",
     "pnpm": "^10.28.1",
     "prettier": "^3.8.0",
+    "tsx": "^4.19.4",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.1"
+    "typescript-eslint": "^8.53.1",
+    "wrangler": "^4.68.0"
   }
 }

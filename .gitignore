@@ -2,5 +2,6 @@ dist
 node_modules
 transpiled
 worker
+.dev.vars
 .env
 .env.*
