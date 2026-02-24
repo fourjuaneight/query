@@ -5,6 +5,7 @@ export interface Bindings {
   TWITCH_CLIENT_SECRET: string;
   DISCOGS_TOKEN: string;
   GITHUB_TOKEN: string;
+  YOUTUBE_KEY: string;
 }
 
 // TMDB

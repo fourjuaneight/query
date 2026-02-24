@@ -11,6 +11,7 @@ const env: Bindings = {
   TWITCH_CLIENT_SECRET: process.env['TWITCH_CLIENT_SECRET'] ?? '',
   DISCOGS_TOKEN: process.env['DISCOGS_TOKEN'] ?? '',
   GITHUB_TOKEN: process.env['GITHUB_TOKEN'] ?? '',
+  YOUTUBE_KEY: process.env['YOUTUBE_KEY'] ?? '',
 };
 
 console.log(`Server running at http://localhost:${port}`);

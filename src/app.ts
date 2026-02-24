@@ -28,6 +28,7 @@ import {
   handleTVShowById,
   handleTVShowSearch,
 } from './shows/handler';
+import { handleVideoQuery } from './yt/handler';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -75,6 +76,9 @@ app.get('/repos/query', async ctx => handleRepoQuery(ctx));
 app.get('/shows/query', async ctx => handleTVShowQuery(ctx));
 app.get('/shows/search', async ctx => handleTVShowSearch(ctx));
 app.get('/shows/:id', async ctx => handleTVShowById(ctx));
+
+// --- YouTube ---
+app.get('/yt/video', async ctx => handleVideoQuery(ctx));
 
 // 404 handler
 app.notFound(ctx => ctx.json({ success: false, error: 'Not Found' }, 404));

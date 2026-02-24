@@ -38,6 +38,7 @@ Links to the upstream API documentation for every integrated service:
 | Discogs (Music) | [API Docs](https://www.discogs.com/developers) |
 | TCGdex (Pokémon TCG) | [API Reference](https://tcgdex.dev/reference/card) |
 | GitHub (Repos) | [REST API](https://docs.github.com/en/rest) |
+| YouTube | [Data API v3](https://developers.google.com/youtube/v3/docs) |
 
 ## Credentials
 
@@ -50,6 +51,7 @@ The following environment variables must be set. Configure them as [Wrangler sec
 | `TWITCH_CLIENT_SECRET` | IGDB (Games) | [Twitch OAuth Client Credentials](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow) |
 | `DISCOGS_TOKEN` | Discogs (Music) | [Discogs Developer Settings](https://www.discogs.com/settings/developers) |
 | `GITHUB_TOKEN` | GitHub (Repos) | [GitHub Personal Access Tokens](https://github.com/settings/tokens) |
+| `YOUTUBE_KEY` | YouTube | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
 
 > **Note:** OpenLibrary, MangaDex, Scryfall, and TCGdex do not require authentication tokens.
 
@@ -143,11 +145,20 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 | `/shows/search` | `query` (required), `language`, `year`, `page` | Search TV shows |
 | `/shows/:id` | `:id` (path), `language` | Get a TV show by TMDB ID |
 
+### YouTube
+
+| Endpoint | Parameters | Description |
+|---|---|---|
+| `/yt/video` | `url` (required) | Get video details by YouTube URL or video ID |
+
 ### Example
 
 ```sh
 # Search for a book
 curl "http://localhost:8787/books/search?title=Dune&limit=5"
+
+# Look up a YouTube video
+curl "http://localhost:8787/yt/video?url=https://youtu.be/YQWLndmkofU"
 
 # Look up an MTG card
 curl "http://localhost:8787/mtg/cards?name=Black+Lotus"
@@ -173,6 +184,7 @@ wrangler secret put TWITCH_CLIENT_ID
 wrangler secret put TWITCH_CLIENT_SECRET
 wrangler secret put DISCOGS_TOKEN
 wrangler secret put GITHUB_TOKEN
+wrangler secret put YOUTUBE_KEY
 ```
 
 For more details, see the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/).

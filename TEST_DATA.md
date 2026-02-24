@@ -149,3 +149,16 @@ curl "http://localhost:8787/repos/search?query=typescript+framework&language=typ
 # Query a single repo by full name (owner/repo)
 curl "http://localhost:8787/repos/query?name=honojs/hono"
 ```
+
+## YouTube
+
+```sh
+# Get video details by URL
+curl "http://localhost:8787/yt/video?url=https://youtu.be/DeGFRB0Mor8"
+
+# Get video details by full URL
+curl "http://localhost:8787/yt/video?url=https://www.youtube.com/watch?v=DeGFRB0Mor8"
+
+# Get video details by video ID
+curl "http://localhost:8787/yt/video?url=DeGFRB0Mor8"
+```
