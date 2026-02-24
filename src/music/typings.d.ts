@@ -97,6 +97,7 @@ export interface AlbumSearchResult {
 export interface TrackSearchResult {
   title: string;
   artist: string;
+  album: string;
   year: string | null;
   genres: string[];
   country: string | null;

@@ -77,7 +77,11 @@ const searchDiscogs = async (
     }
   }
 
-  return discogsFetch<DiscogsSearchResponse>(token, '/database/search', searchParams);
+  return discogsFetch<DiscogsSearchResponse>(
+    token,
+    '/database/search',
+    searchParams,
+  );
 };
 
 /**
@@ -219,11 +223,12 @@ export const searchTrack = async (
 
     return {
       results: response.results.map(result => {
-        const { artist } = parseTitle(result.title);
+        const { artist, name: album } = parseTitle(result.title);
 
         return {
           title: result.title,
           artist,
+          album,
           year: result.year ?? null,
           genres: result.genre ?? [],
           country: result.country ?? null,
