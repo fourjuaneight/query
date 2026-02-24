@@ -3,14 +3,68 @@ import type {
   IGDBQueryOptions,
   GameData,
 } from './typings';
+import { parseJSON } from '../common/helpers';
 
 interface IGDBEnv {
-  IGDB_CLIENT_ID: string;
-  IGDB_ACCESS_TOKEN: string;
+  TWITCH_CLIENT_ID: string;
+  TWITCH_CLIENT_SECRET: string;
+}
+
+interface TwitchTokenResponse {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
 }
 
 const IGDB_BASE_URL = 'https://api.igdb.com/v4';
 const IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload';
+const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
+
+/** Cached OAuth token and its expiry time */
+let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+
+/**
+ * Obtain an OAuth2 access token from Twitch using client credentials
+ * DOCS: https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow
+ *
+ * Caches the token in memory and refreshes it when expired.
+ */
+const getAccessToken = async (env: IGDBEnv): Promise<string> => {
+  if (cachedToken && Date.now() < cachedToken.expiresAt) {
+    return cachedToken.accessToken;
+  }
+
+  let response: Response;
+  try {
+    const url = new URL(TWITCH_TOKEN_URL);
+    url.searchParams.set('client_id', env.TWITCH_CLIENT_ID);
+    url.searchParams.set('client_secret', env.TWITCH_CLIENT_SECRET);
+    url.searchParams.set('grant_type', 'client_credentials');
+
+    response = await fetch(url.toString(), { method: 'POST' });
+  } catch (networkError) {
+    throw new Error(
+      `(getAccessToken): Network error fetching Twitch OAuth token - ${String(networkError)}`,
+    );
+  }
+
+  if (response.status !== 200) {
+    const errorResp = await response.text();
+    throw new Error(
+      `(getAccessToken): ${response.status} - ${response.statusText} - ${errorResp}`,
+    );
+  }
+
+  const data = await parseJSON<TwitchTokenResponse>(response);
+
+  // Cache with a 5-minute safety margin before actual expiry
+  cachedToken = {
+    accessToken: data.access_token,
+    expiresAt: Date.now() + (data.expires_in - 300) * 1000,
+  };
+
+  return cachedToken.accessToken;
+};
 
 /**
  * Build a cover image URL from an image_id
@@ -34,14 +88,16 @@ const igdbFetch = async <T>(
   body: string,
 ): Promise<T> => {
   try {
+    const accessToken = await getAccessToken(env);
+
     let response: Response;
     try {
       response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
-          'Client-ID': env.IGDB_CLIENT_ID,
-          Authorization: `Bearer ${env.IGDB_ACCESS_TOKEN}`,
+          'Client-ID': env.TWITCH_CLIENT_ID,
+          Authorization: `Bearer ${accessToken}`,
         },
         body,
       });

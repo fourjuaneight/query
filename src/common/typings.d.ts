@@ -1,8 +1,8 @@
 // Cloudflare Workers environment bindings
 export interface Bindings {
   TMDB_KEY: string;
-  IGDB_CLIENT_ID: string;
-  IGDB_ACCESS_TOKEN: string;
+  TWITCH_CLIENT_ID: string;
+  TWITCH_CLIENT_SECRET: string;
   DISCOGS_TOKEN: string;
   GITHUB_TOKEN: string;
 }

@@ -7,8 +7,8 @@ const port = Number(process.env['PORT'] ?? 8787);
 
 const env: Bindings = {
   TMDB_KEY: process.env['TMDB_KEY'] ?? '',
-  IGDB_CLIENT_ID: process.env['IGDB_CLIENT_ID'] ?? '',
-  IGDB_ACCESS_TOKEN: process.env['IGDB_ACCESS_TOKEN'] ?? '',
+  TWITCH_CLIENT_ID: process.env['TWITCH_CLIENT_ID'] ?? '',
+  TWITCH_CLIENT_SECRET: process.env['TWITCH_CLIENT_SECRET'] ?? '',
   DISCOGS_TOKEN: process.env['DISCOGS_TOKEN'] ?? '',
   GITHUB_TOKEN: process.env['GITHUB_TOKEN'] ?? '',
 };
