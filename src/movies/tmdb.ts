@@ -153,7 +153,11 @@ export const searchMovies = async (
 
     const results = await Promise.all(
       response.results.map(async movie => {
-        const details = await getMovieDetails(apiKey, movie.id, options.language);
+        const details = await getMovieDetails(
+          apiKey,
+          movie.id,
+          options.language,
+        );
 
         const director =
           details.credits?.crew.find(member => member.job === 'Director')

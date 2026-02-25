@@ -155,7 +155,11 @@ export const searchTVShows = async (
 
     const results = await Promise.all(
       response.results.map(async show => {
-        const details = await getTVShowDetails(apiKey, show.id, options.language);
+        const details = await getTVShowDetails(
+          apiKey,
+          show.id,
+          options.language,
+        );
 
         const creators = details.created_by.map(creator => creator.name);
 

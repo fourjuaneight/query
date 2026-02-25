@@ -12,6 +12,13 @@ export default tseslint.config(
     ignores: ['dist/**', 'node_modules/**'],
   },
   {
+    files: ['src/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+    },
+  },
+  {
     files: ['src/**/*.ts'],
     plugins: {
       prettier: prettierPlugin,
