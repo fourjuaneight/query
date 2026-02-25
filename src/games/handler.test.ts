@@ -10,7 +10,7 @@ const env = {
   TWITCH_CLIENT_SECRET: 'test-secret',
   TMDB_KEY: '',
   DISCOGS_TOKEN: '',
-  GITHUB_TOKEN: '',
+  GH_TOKEN: '',
   YOUTUBE_KEY: '',
 };
 

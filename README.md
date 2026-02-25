@@ -50,7 +50,7 @@ The following environment variables must be set. Configure them as [Wrangler sec
 | `TWITCH_CLIENT_ID` | IGDB (Games) | [Twitch Developer Console](https://dev.twitch.tv/console/apps) |
 | `TWITCH_CLIENT_SECRET` | IGDB (Games) | [Twitch OAuth Client Credentials](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow) |
 | `DISCOGS_TOKEN` | Discogs (Music) | [Discogs Developer Settings](https://www.discogs.com/settings/developers) |
-| `GITHUB_TOKEN` | GitHub (Repos) | [GitHub Personal Access Tokens](https://github.com/settings/tokens) |
+| `GH_TOKEN` | GitHub (Repos) | [GitHub Personal Access Tokens](https://github.com/settings/tokens) |
 | `YOUTUBE_KEY` | YouTube | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
 
 > **Note:** OpenLibrary, MangaDex, Scryfall, and TCGdex do not require authentication tokens.
@@ -183,7 +183,7 @@ wrangler secret put TMDB_KEY
 wrangler secret put TWITCH_CLIENT_ID
 wrangler secret put TWITCH_CLIENT_SECRET
 wrangler secret put DISCOGS_TOKEN
-wrangler secret put GITHUB_TOKEN
+wrangler secret put GH_TOKEN
 wrangler secret put YOUTUBE_KEY
 ```
 

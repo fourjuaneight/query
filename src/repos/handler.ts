@@ -24,7 +24,7 @@ export const handleRepoSearch = async (
   const perPage = ctx.req.query('per_page');
 
   try {
-    const results = await searchRepos(ctx.env.GITHUB_TOKEN, query, {
+    const results = await searchRepos(ctx.env.GH_TOKEN, query, {
       ...(language && { language }),
       ...(sort && { sort }),
       ...(order && { order }),
@@ -47,7 +47,7 @@ export const handleRepoQuery = async (
   }
 
   try {
-    const result = await queryRepo(ctx.env.GITHUB_TOKEN, name);
+    const result = await queryRepo(ctx.env.GH_TOKEN, name);
     if (!result) {
       return jsonError(ctx, `No repo found for name: ${name}`, 404);
     }

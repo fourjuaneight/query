@@ -4,7 +4,7 @@ export interface Bindings {
   TWITCH_CLIENT_ID: string;
   TWITCH_CLIENT_SECRET: string;
   DISCOGS_TOKEN: string;
-  GITHUB_TOKEN: string;
+  GH_TOKEN: string;
   YOUTUBE_KEY: string;
 }
 

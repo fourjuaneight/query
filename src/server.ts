@@ -10,7 +10,7 @@ const env: Bindings = {
   TWITCH_CLIENT_ID: process.env['TWITCH_CLIENT_ID'] ?? '',
   TWITCH_CLIENT_SECRET: process.env['TWITCH_CLIENT_SECRET'] ?? '',
   DISCOGS_TOKEN: process.env['DISCOGS_TOKEN'] ?? '',
-  GITHUB_TOKEN: process.env['GITHUB_TOKEN'] ?? '',
+  GH_TOKEN: process.env['GH_TOKEN'] ?? '',
   YOUTUBE_KEY: process.env['YOUTUBE_KEY'] ?? '',
 };
 
