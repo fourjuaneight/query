@@ -118,11 +118,7 @@ describe('Movies handlers', () => {
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
-      const res = await app.request(
-        '/movies/query?title=Fight+Club',
-        {},
-        env,
-      );
+      const res = await app.request('/movies/query?title=Fight+Club', {}, env);
       expect(res.status).toBe(500);
 
       const body = await res.json();
@@ -149,11 +145,7 @@ describe('Movies handlers', () => {
         new Response(JSON.stringify(movieDetails), { status: 200 }),
       );
 
-      const res = await app.request(
-        '/movies/550?language=es-MX',
-        {},
-        env,
-      );
+      const res = await app.request('/movies/550?language=es-MX', {}, env);
       expect(res.status).toBe(200);
     });
 
@@ -177,11 +169,7 @@ describe('Movies handlers', () => {
           new Response(JSON.stringify(movieDetails), { status: 200 }),
         );
 
-      const res = await app.request(
-        '/movies/search?query=fight+club',
-        {},
-        env,
-      );
+      const res = await app.request('/movies/search?query=fight+club', {}, env);
       expect(res.status).toBe(200);
 
       const body = await res.json();
@@ -213,11 +201,7 @@ describe('Movies handlers', () => {
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
-      const res = await app.request(
-        '/movies/search?query=fight+club',
-        {},
-        env,
-      );
+      const res = await app.request('/movies/search?query=fight+club', {}, env);
       expect(res.status).toBe(500);
     });
   });

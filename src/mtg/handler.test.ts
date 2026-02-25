@@ -214,7 +214,9 @@ describe('MTG handler', () => {
       expect(res.status).toBe(200);
 
       const body = await res.json();
-      expect(body.data[0]!.oracle_text).toBe('Line one\\nLine two\\nLine three');
+      expect(body.data[0]!.oracle_text).toBe(
+        'Line one\\nLine two\\nLine three',
+      );
       expect(body.data[0]!.flavor_text).toBe('Flavor\\nText');
     });
   });

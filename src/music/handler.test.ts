@@ -63,10 +63,9 @@ describe('Music handlers', () => {
 
     it('passes page and per_page options', async () => {
       mockFetch.mockResolvedValue(
-        new Response(
-          JSON.stringify(discogsSearchResponse([])),
-          { status: 200 },
-        ),
+        new Response(JSON.stringify(discogsSearchResponse([])), {
+          status: 200,
+        }),
       );
 
       const res = await app.request(
@@ -126,10 +125,9 @@ describe('Music handlers', () => {
 
     it('passes artist, year, genre, page, and per_page options', async () => {
       mockFetch.mockResolvedValue(
-        new Response(
-          JSON.stringify(discogsSearchResponse([])),
-          { status: 200 },
-        ),
+        new Response(JSON.stringify(discogsSearchResponse([])), {
+          status: 200,
+        }),
       );
 
       const res = await app.request(
@@ -190,10 +188,9 @@ describe('Music handlers', () => {
 
     it('passes artist, year, genre, page, and per_page options', async () => {
       mockFetch.mockResolvedValue(
-        new Response(
-          JSON.stringify(discogsSearchResponse([])),
-          { status: 200 },
-        ),
+        new Response(JSON.stringify(discogsSearchResponse([])), {
+          status: 200,
+        }),
       );
 
       const res = await app.request(

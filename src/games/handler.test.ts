@@ -142,11 +142,7 @@ describe('Games handlers', () => {
     it('returns 404 when no game is found', async () => {
       setupMocks([]);
 
-      const res = await app.request(
-        '/games/query?title=nonexistent',
-        {},
-        env,
-      );
+      const res = await app.request('/games/query?title=nonexistent', {}, env);
       expect(res.status).toBe(404);
 
       const body = await res.json();

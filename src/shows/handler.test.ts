@@ -111,11 +111,7 @@ describe('Shows handlers', () => {
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
-      const res = await app.request(
-        '/shows/query?title=Breaking+Bad',
-        {},
-        env,
-      );
+      const res = await app.request('/shows/query?title=Breaking+Bad', {}, env);
       expect(res.status).toBe(500);
 
       const body = await res.json();

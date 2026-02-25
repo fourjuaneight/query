@@ -114,11 +114,7 @@ describe('YouTube handler', () => {
         new Response(JSON.stringify(youtubeResponse), { status: 200 }),
       );
 
-      const res = await app.request(
-        '/yt/video?url=dQw4w9WgXcQ',
-        {},
-        env,
-      );
+      const res = await app.request('/yt/video?url=dQw4w9WgXcQ', {}, env);
       expect(res.status).toBe(200);
 
       const body = await res.json();
@@ -189,11 +185,7 @@ describe('YouTube handler', () => {
         new Response(JSON.stringify(maxresResponse), { status: 200 }),
       );
 
-      const res = await app.request(
-        '/yt/video?url=dQw4w9WgXcQ',
-        {},
-        env,
-      );
+      const res = await app.request('/yt/video?url=dQw4w9WgXcQ', {}, env);
       expect(res.status).toBe(200);
 
       const body = await res.json();
@@ -224,11 +216,7 @@ describe('YouTube handler', () => {
         new Response(JSON.stringify(defaultOnly), { status: 200 }),
       );
 
-      const res = await app.request(
-        '/yt/video?url=dQw4w9WgXcQ',
-        {},
-        env,
-      );
+      const res = await app.request('/yt/video?url=dQw4w9WgXcQ', {}, env);
       expect(res.status).toBe(200);
 
       const body = await res.json();
