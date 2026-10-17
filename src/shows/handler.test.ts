@@ -108,13 +108,13 @@ describe('Shows handlers', () => {
       expect(res.status).toBe(404);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       mockFetch.mockResolvedValueOnce(
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
       const res = await app.request('/shows/query?title=Breaking+Bad', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
@@ -144,13 +144,13 @@ describe('Shows handlers', () => {
       expect(res.status).toBe(200);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       mockFetch.mockResolvedValueOnce(
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
       const res = await app.request('/shows/1396', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
     });
   });
 
@@ -195,7 +195,7 @@ describe('Shows handlers', () => {
       expect(res.status).toBe(200);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       mockFetch.mockResolvedValueOnce(
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
@@ -205,7 +205,7 @@ describe('Shows handlers', () => {
         {},
         env,
       );
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
     });
   });
 
