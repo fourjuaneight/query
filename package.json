@@ -33,7 +33,7 @@
     "hono": "^4.13.13"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260702.1",
+    "@cloudflare/workers-types": "^5.20261016.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.9.9",
     "@vitest/coverage-v8": "5.0.5",
