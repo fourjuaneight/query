@@ -77,7 +77,7 @@ Successful `GET` responses are cached for one hour (`Cache-Control: max-age=3600
 
 ## Install
 
-**Prerequisites:** Node.js and [pnpm](https://pnpm.io/).
+**Prerequisites:** Node.js 26 (see [`.nvmrc`](.nvmrc)) and [pnpm](https://pnpm.io/) 12. pnpm switches to the version pinned in `package.json` (`packageManager`) automatically.
 
 ```sh
 # Clone the repository
@@ -222,21 +222,29 @@ pnpm test:watch
 
 # Run with coverage report
 pnpm test:coverage
+
+# Typecheck worker code (no Node types) and Node-side code (server, tests)
+pnpm typecheck
 ```
+
+A Husky pre-commit hook runs Prettier and ESLint on staged files. It installs with `pnpm install`.
 
 All handler tests use Hono's built-in `app.request()` helper to exercise routes without a running server. External API calls are mocked via `vi.stubGlobal('fetch', ...)`, so the suite runs entirely offline and stays fast.
 
 | Test file | What it covers |
 |---|---|
-| `src/common/helpers.test.ts` | `buildPosterUrl`, `parseJSON`, `tmdbFetch`, `jsonSuccess`, `jsonError` |
-| `src/app.test.ts` | Health check, 404 fallback, missing-param validation, invalid-ID validation |
+| `src/common/helpers.test.ts` | `buildPosterUrl`, `buildUrl`, `parseJSON`, `upstreamFetch`, `tmdbFetch`, `jsonSuccess`, `jsonError`, `errorResponse` status mapping |
+| `src/common/params.test.ts` | Required/optional/integer/enum/boolean query params, path IDs |
+| `src/app.test.ts` | Health check, 404 fallback, missing-param validation, invalid-ID validation, API key auth, rate limiting |
 | `src/books/handler.test.ts` | ISBN lookup, 404, search, error paths, minimal book edge case, cover-ID fallback |
 | `src/games/handler.test.ts` | Search, query, by-ID, limit option, 404, error paths, minimal game edge case |
-| `src/manga/handler.test.ts` | Search, details with author lookup, limit/offset options, error paths, no-cover/no-relationship edge cases |
-| `src/movies/handler.test.ts` | Query, search, by-ID, language/year options, 404, error paths, no-director/no-poster edge cases |
-| `src/mtg/handler.test.ts` | Card search, set/number filters, Scryfall error/warning responses, double-faced cards, colorless cards, newline escaping |
+| `src/games/igdb.test.ts` | Query escaping, shared token request, 401 refresh-and-retry |
+| `src/manga/handler.test.ts` | Search, single-request details, UUID validation, 404, limit/offset options, error paths, no-cover/no-relationship edge cases |
+| `src/movies/handler.test.ts` | Query, search, by-ID, language/year options, `details=false`, 404, error paths, no-director/no-poster edge cases |
+| `src/mtg/handler.test.ts` | Card search, set/number filters, request headers, no-match (404) and rejected-query (400) responses, double-faced cards, colorless cards, newline escaping |
 | `src/music/handler.test.ts` | Artist, album, and track search, pagination/filter options, error paths |
-| `src/pkm/handler.test.ts` | Card search, set filter, empty results, error paths, minimal card edge case, effect-as-description |
-| `src/repos/handler.test.ts` | Search, query, 404, filter options, error paths, no-license/no-description edge case |
+| `src/pkm/handler.test.ts` | Card search, set filter, limit/page, empty results, error paths, minimal card edge case, effect-as-description |
+| `src/repos/handler.test.ts` | Search, query, `owner/repo` lookup, best-match ranking, `totalPages`, param validation, 404, error paths, no-license/no-description edge case |
 | `src/shows/handler.test.ts` | Query, search, by-ID, language/year options, 404, error paths, no-poster edge case |
-| `src/yt/handler.test.ts` | Full URL, short URL, raw ID, extra query params, 404, error paths, thumbnail resolution fallback |
+| `src/yt/handler.test.ts` | Full URL, short URL, share link, raw ID, extra query params, invalid input, 404, error paths, thumbnail resolution fallback |
+| `src/yt/youtube.test.ts` | Video ID extraction across URL formats |
