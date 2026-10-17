@@ -3,7 +3,7 @@ import type {
   IGDBQueryOptions,
   GameData,
 } from './typings';
-import { upstreamFetch } from '../common/helpers';
+import { UpstreamError, upstreamFetch } from '../common/helpers';
 
 interface IGDBEnv {
   TWITCH_CLIENT_ID: string;
@@ -24,8 +24,33 @@ const GAME_FIELDS = `fields name,summary,cover.image_id,cover.url,genres.name,pl
        involved_companies.company.name,involved_companies.developer,
        involved_companies.publisher,first_release_date,rating;`;
 
+interface CachedToken {
+  accessToken: string;
+  expiresAt: number;
+}
+
 /** Cached OAuth token and its expiry time */
-let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+let cachedToken: CachedToken | null = null;
+
+/** In-flight token request, shared so concurrent cold requests fetch once */
+let pendingToken: Promise<CachedToken> | null = null;
+
+const requestToken = async (env: IGDBEnv): Promise<CachedToken> => {
+  const url = new URL(TWITCH_TOKEN_URL);
+  url.searchParams.set('client_id', env.TWITCH_CLIENT_ID);
+  url.searchParams.set('client_secret', env.TWITCH_CLIENT_SECRET);
+  url.searchParams.set('grant_type', 'client_credentials');
+
+  const data = await upstreamFetch<TwitchTokenResponse>('Twitch', url, {
+    method: 'POST',
+  });
+
+  // Cache with a 5-minute safety margin before actual expiry
+  return {
+    accessToken: data.access_token,
+    expiresAt: Date.now() + (data.expires_in - 300) * 1000,
+  };
+};
 
 /**
  * Obtain an OAuth2 access token from Twitch using client credentials
@@ -38,20 +63,10 @@ const getAccessToken = async (env: IGDBEnv): Promise<string> => {
     return cachedToken.accessToken;
   }
 
-  const url = new URL(TWITCH_TOKEN_URL);
-  url.searchParams.set('client_id', env.TWITCH_CLIENT_ID);
-  url.searchParams.set('client_secret', env.TWITCH_CLIENT_SECRET);
-  url.searchParams.set('grant_type', 'client_credentials');
-
-  const data = await upstreamFetch<TwitchTokenResponse>('Twitch', url, {
-    method: 'POST',
+  pendingToken ??= requestToken(env).finally(() => {
+    pendingToken = null;
   });
-
-  // Cache with a 5-minute safety margin before actual expiry
-  cachedToken = {
-    accessToken: data.access_token,
-    expiresAt: Date.now() + (data.expires_in - 300) * 1000,
-  };
+  cachedToken = await pendingToken;
 
   return cachedToken.accessToken;
 };
@@ -82,18 +97,32 @@ const igdbFetch = async <T>(
   env: IGDBEnv,
   endpoint: string,
   body: string,
+  retryOnUnauthorized = true,
 ): Promise<T> => {
   const accessToken = await getAccessToken(env);
 
-  return upstreamFetch<T>('IGDB', `${IGDB_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Client-ID': env.TWITCH_CLIENT_ID,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body,
-  });
+  try {
+    return await upstreamFetch<T>('IGDB', `${IGDB_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Client-ID': env.TWITCH_CLIENT_ID,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body,
+    });
+  } catch (error) {
+    // Token revoked or expired early: drop it and retry once with a fresh one
+    if (
+      retryOnUnauthorized &&
+      error instanceof UpstreamError &&
+      error.status === 401
+    ) {
+      cachedToken = null;
+      return igdbFetch<T>(env, endpoint, body, false);
+    }
+    throw error;
+  }
 };
 
 /**
