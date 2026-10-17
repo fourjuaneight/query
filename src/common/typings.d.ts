@@ -1,3 +1,5 @@
+import type { OAuthHelpers } from '@cloudflare/workers-oauth-provider';
+
 // Cloudflare Workers environment bindings
 export interface Bindings {
   TMDB_KEY: string;
@@ -10,6 +12,12 @@ export interface Bindings {
   API_KEY?: string;
   /** Optional Workers Rate Limiting binding (see wrangler.toml). */
   RATE_LIMITER?: RateLimit;
+  /** Public origin of the Worker (e.g. https://query.example.com). Used as the MCP OAuth resource. */
+  PUBLIC_URL?: string;
+  /** KV namespace for OAuth clients, grants and tokens (MCP only). */
+  OAUTH_KV?: KVNamespace;
+  /** OAuth helpers, injected by OAuthProvider for the /authorize page (absent under Node). */
+  OAUTH_PROVIDER?: OAuthHelpers;
 }
 
 export interface AppEnv {

@@ -13,6 +13,14 @@ export default defineConfig(
     ignores: ['dist/**', 'node_modules/**'],
   },
   {
+    files: ['vitest.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.node.json',
+      },
+    },
+  },
+  {
     files: ['src/**/*.test.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-member-access': 'off',

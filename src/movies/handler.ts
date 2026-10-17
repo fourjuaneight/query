@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../common/typings';
+import { YEAR_RANGE } from '../common/constants';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import {
   boolQuery,
@@ -10,8 +11,6 @@ import {
   requireQuery,
 } from '../common/params';
 import { queryMovie, queryMovieById, searchMovies } from './tmdb';
-
-const YEAR_RANGE = { min: 1800, max: 2200 };
 
 export const handleMovieQuery = async (
   ctx: Context<AppEnv>,

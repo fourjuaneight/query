@@ -159,30 +159,42 @@ export const jsonError = (
 ): Response => ctx.json({ success: false, error: message }, status);
 
 /**
- * Map any thrown error to a standard JSON error response.
+ * Map any thrown error to a client-safe message and status.
  * - HTTPException (validation, auth): its own status and message
  * - UpstreamError: 404/429 pass through, everything else becomes 502
  * - Anything else: generic 500
  * Upstream details are logged, never returned to the client.
  */
-export const errorResponse = (err: Error, ctx: Context<AppEnv>): Response => {
+export const describeError = (
+  err: unknown,
+): { message: string; status: ContentfulStatusCode } => {
   if (err instanceof HTTPException) {
-    return err.res
-      ? err.getResponse()
-      : jsonError(ctx, err.message, err.status);
+    return { message: err.message, status: err.status };
   }
 
-  console.error(err.message);
+  console.error(err instanceof Error ? err.message : String(err));
 
   if (err instanceof UpstreamError) {
     if (err.status === 404) {
-      return jsonError(ctx, `${err.service}: not found`, 404);
+      return { message: `${err.service}: not found`, status: 404 };
     }
     if (err.status === 429) {
-      return jsonError(ctx, `${err.service}: rate limit exceeded`, 429);
+      return { message: `${err.service}: rate limit exceeded`, status: 429 };
     }
-    return jsonError(ctx, `${err.service}: upstream request failed`, 502);
+    return { message: `${err.service}: upstream request failed`, status: 502 };
   }
 
-  return jsonError(ctx, 'Internal Server Error', 500);
+  return { message: 'Internal Server Error', status: 500 };
+};
+
+/**
+ * Map any thrown error to a standard JSON error response.
+ */
+export const errorResponse = (err: Error, ctx: Context<AppEnv>): Response => {
+  if (err instanceof HTTPException && err.res) {
+    return err.getResponse();
+  }
+
+  const { message, status } = describeError(err);
+  return jsonError(ctx, message, status);
 };

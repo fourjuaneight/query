@@ -1,6 +1,8 @@
 name = "query"
-main = "src/app.ts"
+main = "src/worker.ts"
 compatibility_date = "2026-10-12"
+# Blocks same-zone fetches when the MCP OAuth server loads Client ID Metadata Documents (SSRF protection)
+compatibility_flags = ["global_fetch_strictly_public"]
 
 [observability]
 enabled = true
@@ -11,3 +13,15 @@ enabled = true
 name = "RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 60, period = 60 }
+
+# MCP OAuth: public origin of this Worker, used as the OAuth resource identifier.
+# Set it to your deployed URL (workers.dev or custom domain).
+[vars]
+PUBLIC_URL = "https://query.example.workers.dev"
+
+# MCP OAuth: storage for clients, grants and tokens.
+# Create it with `pnpm exec wrangler kv namespace create OAUTH_KV` and paste the ID here.
+# DOCS: https://github.com/cloudflare/workers-oauth-provider
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "REPLACE_WITH_OAUTH_KV_ID"
