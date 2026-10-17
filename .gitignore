@@ -6,3 +6,4 @@ worker
 .env
 .env.*
 coverage
+.wrangler
