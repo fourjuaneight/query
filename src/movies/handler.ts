@@ -34,7 +34,7 @@ export const handleMovieById = async (
   ctx: Context<{ Bindings: Bindings }>,
 ): Promise<Response> => {
   const id = ctx.req.param('id');
-  const movieId = parseInt(id, 10);
+  const movieId = parseInt(id ?? '', 10);
   if (isNaN(movieId)) {
     return jsonError(ctx, 'Invalid movie ID');
   }

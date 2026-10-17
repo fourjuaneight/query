@@ -49,7 +49,7 @@ export const handleGameById = async (
   ctx: Context<{ Bindings: Bindings }>,
 ): Promise<Response> => {
   const id = ctx.req.param('id');
-  const gameId = parseInt(id, 10);
+  const gameId = parseInt(id ?? '', 10);
   if (isNaN(gameId)) {
     return jsonError(ctx, 'Invalid game ID');
   }

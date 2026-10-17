@@ -34,7 +34,7 @@ export const handleTVShowById = async (
   ctx: Context<{ Bindings: Bindings }>,
 ): Promise<Response> => {
   const id = ctx.req.param('id');
-  const seriesId = parseInt(id, 10);
+  const seriesId = parseInt(id ?? '', 10);
   if (isNaN(seriesId)) {
     return jsonError(ctx, 'Invalid series ID');
   }
