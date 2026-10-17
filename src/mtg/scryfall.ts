@@ -1,11 +1,13 @@
 /* eslint-disable id-length */
+import { HTTPException } from 'hono/http-exception';
+
 import type {
   MTGItem,
   RequestQuery,
   ScryfallError,
   ScryfallSearch,
 } from './typings.d';
-import { buildUrl, upstreamFetch } from '../common/helpers';
+import { UpstreamError, buildUrl, upstreamFetch } from '../common/helpers';
 
 const SCRYFALL_SEARCH_URL = 'https://api.scryfall.com/cards/search';
 
@@ -20,11 +22,17 @@ const magicColors: Record<string, string> = {
 const escapeText = (text: string): string => text.replace(/\n/g, '\\n');
 
 /**
- * Type guard to check if a Scryfall response is an error
+ * Extract the human-readable message from a Scryfall error body
+ * DOCS: https://scryfall.com/docs/api/errors
  */
-const isScryfallError = (
-  response: ScryfallSearch | ScryfallError,
-): response is ScryfallError => response.object === 'error';
+const scryfallDetails = (body: string): string => {
+  try {
+    const error = JSON.parse(body) as ScryfallError;
+    return error.warnings?.join(' - ') ?? error.details;
+  } catch {
+    return 'invalid query';
+  }
+};
 
 /**
  * Search Scryfall database for cards matching the given search pattern.
@@ -48,24 +56,27 @@ export const getMTGCard = async (
 
   const url = buildUrl(SCRYFALL_SEARCH_URL, { order: 'set', q: query });
 
-  // Scryfall requires an explicit User-Agent and Accept header
-  const response = await upstreamFetch<ScryfallSearch | ScryfallError>(
-    'Scryfall',
-    url,
-    {
+  let response: ScryfallSearch;
+  try {
+    // Scryfall requires an explicit User-Agent and Accept header
+    response = await upstreamFetch<ScryfallSearch>('Scryfall', url, {
       headers: {
         Accept: 'application/json',
         'User-Agent': 'QueryAPI/1.0',
       },
-    },
-  );
-
-  if (isScryfallError(response)) {
-    const errMsg = response.warnings
-      ? response.warnings.join(' - ')
-      : response.details;
-
-    throw new Error(`(request): ${errMsg}`);
+    });
+  } catch (error) {
+    if (error instanceof UpstreamError) {
+      // Scryfall returns 404 when no cards match
+      if (error.status === 404) return [];
+      // 400 means the query itself was rejected (e.g. unknown set code)
+      if (error.status === 400) {
+        throw new HTTPException(400, {
+          message: `Scryfall: ${scryfallDetails(error.body)}`,
+        });
+      }
+    }
+    throw error;
   }
 
   const cards = response.data.map(

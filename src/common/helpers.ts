@@ -19,6 +19,8 @@ export class UpstreamError extends Error {
     readonly service: string,
     readonly status: number,
     message: string,
+    /** Truncated upstream response body (for callers that parse API errors) */
+    readonly body = '',
   ) {
     super(`[${service}] ${message}`);
   }
@@ -85,6 +87,7 @@ export const upstreamFetch = async <T>(
       service,
       response.status,
       `${response.status} ${response.statusText} (${target.pathname}) - ${errorResp}`,
+      errorResp,
     );
   }
 
