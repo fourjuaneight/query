@@ -159,6 +159,24 @@ describe('Repos handlers', () => {
   });
 
   describe('lookup and validation', () => {
+    it('includes totalPages in search results', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({ ...githubSearchResponse, total_count: 5000 }),
+          { status: 200 },
+        ),
+      );
+
+      const res = await app.request(
+        '/repos/search?query=linux&per_page=100',
+        {},
+        env,
+      );
+      const body = await res.json<ApiBody>();
+      // GitHub caps search at 1000 results
+      expect(body.data.totalPages).toBe(10);
+    });
+
     it.each([['sort=popular'], ['order=up'], ['per_page=101'], ['page=abc']])(
       'returns 400 for invalid %s',
       async param => {
