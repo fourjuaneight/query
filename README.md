@@ -71,10 +71,9 @@ The following environment variables must be set. Configure them as [Wrangler sec
 
 | Variable / binding | Purpose |
 |---|---|
-| `API_KEY` (optional secret) | When set, every REST route except `/` requires `Authorization: Bearer <API_KEY>`. When unset, the REST API is open. It is also the owner password for MCP sign-in; when unset, MCP sign-in is disabled. |
-| `RATE_LIMITER` (binding in [`wrangler.toml`](wrangler.toml)) | Per-IP limit of 60 requests per 60 seconds (REST, MCP and the sign-in page). Remove the `[[ratelimits]]` block to disable. |
-| `PUBLIC_URL` (var in [`wrangler.toml`](wrangler.toml)) | Public origin of the Worker. The MCP endpoint is `<PUBLIC_URL>/mcp`. |
-| `OAUTH_KV` (binding in [`wrangler.toml`](wrangler.toml)) | KV namespace for MCP OAuth clients, grants and tokens. |
+| `API_KEY` (optional secret) | When set, every REST route except `/` requires `Authorization: Bearer <API_KEY>`. When unset, the REST API is open. It is also the owner password for MCP sign-in. When unset, the MCP server and its OAuth endpoints answer `503`. Use a long random value. |
+| `RATE_LIMITER` (binding in [`wrangler.toml`](wrangler.toml)) | Per-IP limit of 60 requests per 60 seconds for REST, `/mcp`, the `/authorize` sign-in page and the `/oauth/*` endpoints. Remove the `[[ratelimits]]` block to disable. This also removes the only throttle on sign-in password guesses. |
+| `OAUTH_KV` (binding in [`wrangler.toml`](wrangler.toml)) | KV namespace for MCP OAuth clients, grants and tokens. Wrangler creates it on the first deploy. |
 
 Successful `GET` responses are cached for one hour (`Cache-Control: max-age=3600`) using the Workers Cache API. Cloudflare documents the Cache API as functional on custom domains.
 
@@ -97,7 +96,7 @@ pnpm dev
 pnpm dev:local
 ```
 
-For `pnpm dev`, put local values in a `.dev.vars` file (git-ignored), for example `PUBLIC_URL=http://localhost:8787` and `API_KEY=dev`, next to the API credentials.
+For `pnpm dev`, put the API credentials and `API_KEY` in a `.dev.vars` file (git-ignored). Wrangler reads `.env` only when there is no `.dev.vars`, so keep all variables in one file. `pnpm dev:local` reads `.env`.
 
 For more on Hono's API and features, see the [Hono documentation](https://hono.dev/docs/).
 
@@ -178,6 +177,8 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 
 ### Example
 
+If `API_KEY` is set, add `-H "Authorization: Bearer $API_KEY"` to each request.
+
 ```sh
 # Search for a book
 curl "http://localhost:8787/books/search?title=Dune&limit=5"
@@ -195,7 +196,7 @@ The Worker is also a remote [Model Context Protocol](https://modelcontextprotoco
 
 - **Transport:** Streamable HTTP, stateless. It serves the `2026-07-28` protocol and falls back to `2025-*` clients ([`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)).
 - **Auth:** OAuth 2.1 with PKCE ([`@cloudflare/workers-oauth-provider`](https://github.com/cloudflare/workers-oauth-provider)). Clients register with Client ID Metadata Documents or Dynamic Client Registration. The `/authorize` consent page asks for the owner password, which is the `API_KEY` secret.
-- **Tools:** 21 read-only tools, one per REST route. Results are JSON text. Errors come back as tool errors with the same messages as the REST API.
+- **Tools:** 21 read-only tools, one per REST route. Results are JSON text. Errors come back as tool errors. Not-found and upstream errors use the same messages as the REST API. Invalid arguments return the MCP SDK's validation message.
 
 | Tool | REST route |
 |---|---|
@@ -210,13 +211,17 @@ The Worker is also a remote [Model Context Protocol](https://modelcontextprotoco
 | `search_repos`, `get_repo` | `/repos/search`, `/repos/query` |
 | `get_youtube_video` | `/yt/video` |
 
-Tool parameters match the REST query parameters, except that `per_page` is `perPage` and `:id` path segments are an `id` argument.
+Tool parameters match the REST query parameters, except that `per_page` is `perPage`, `:id` path segments are an `id` argument, and numbers and booleans are JSON values (`5`, `false`), not strings. Search results from `search_games` and `search_manga` include the `id` that `get_game` and `get_manga` take.
 
 ### Connect Claude
 
 - **claude.ai (web, desktop and mobile):** Settings → Connectors → Add custom connector. Enter `https://<your-worker>/mcp`, then sign in with the `API_KEY` password when asked.
 - **Claude Code:** `claude mcp add --transport http query https://<your-worker>/mcp`, then run `/mcp` in Claude Code to sign in.
-- **MCP Inspector (local testing):** `npx @modelcontextprotocol/inspector`, then connect to `http://localhost:8787/mcp`.
+- **MCP Inspector (local testing):** `npx @modelcontextprotocol/inspector`, then connect to `http://localhost:8787/mcp` (Streamable HTTP).
+
+The server works on every hostname the Worker serves (`workers.dev`, a custom domain, `localhost`). Each hostname issues its own tokens, so keep using the URL you signed in with.
+
+A sign-in lasts while it is used. It expires after 30 days without use, and the client then asks you to sign in again. Changing or removing `API_KEY` signs out every connected client.
 
 ## Deployment
 
@@ -224,14 +229,12 @@ This project is configured to deploy to [Cloudflare Workers](https://developers.
 
 ```sh
 # Deploy to Cloudflare Workers (Wrangler bundles src/worker.ts)
-pnpm deploy
+pnpm run deploy
 ```
 
-For the MCP server, do these steps once before the first deploy:
+Use `pnpm run deploy`, not `pnpm deploy`: `pnpm deploy` is a built-in pnpm command. The CI workflow ([`.github/workflows/worker.yml`](.github/workflows/worker.yml)) also deploys on every push to `main`.
 
-1. Create the OAuth KV namespace with `pnpm exec wrangler kv namespace create OAUTH_KV` and put its `id` in the `[[kv_namespaces]]` block of [`wrangler.toml`](wrangler.toml).
-2. Set `PUBLIC_URL` under `[vars]` to the Worker's public origin (your `workers.dev` URL or custom domain, no trailing slash).
-3. Set the `API_KEY` secret (below). MCP sign-in stays disabled without it.
+The `OAUTH_KV` binding in [`wrangler.toml`](wrangler.toml) has no `id`. On the first deploy, Wrangler creates the namespace and binds it, and later deploys reuse it. The Cloudflare API token (`CF_API_TOKEN` in CI) needs the **Workers KV Storage: Edit** permission for this. To use an existing namespace instead, add its `id` to the binding.
 
 Before deploying, make sure all required secrets are set in your Cloudflare dashboard or via the Wrangler CLI:
 
@@ -251,7 +254,7 @@ For more details, see the [Cloudflare Workers documentation](https://developers.
 
 ## Testing
 
-Tests are written with [Vitest](https://vitest.dev/) and live alongside their source files as `*.test.ts`. Every handler and shared helper has coverage.
+Tests are written with [Vitest](https://vitest.dev/) and live alongside their source files as `*.test.ts`. Every handler, MCP tool and shared helper has coverage.
 
 ```sh
 # Run the full test suite
@@ -290,5 +293,5 @@ All handler tests use Hono's built-in `app.request()` helper to exercise routes 
 | `src/shows/handler.test.ts` | Query, search, by-ID, language/year options, 404, error paths, no-poster edge case |
 | `src/yt/handler.test.ts` | Full URL, short URL, share link, raw ID, extra query params, invalid input, 404, error paths, thumbnail resolution fallback |
 | `src/yt/youtube.test.ts` | Video ID extraction across URL formats |
-| `src/mcp/server.test.ts` | Tool list and annotations, each tool reaches its service, JSON results, not-found and upstream error mapping, input validation |
-| `src/worker.test.ts` | REST auth through the Worker entry, OAuth discovery metadata, `/mcp` 401 challenge, full sign-in (registration, consent password, PKCE token exchange) and MCP calls with the token |
+| `src/mcp/server.test.ts` | Tool list and annotations, each tool reaches its service, argument forwarding, `details: false`, IDs in search results, JSON results, not-found and upstream error mapping, input validation |
+| `src/worker.test.ts` | REST auth through the Worker entry, MCP off without `API_KEY`, OAuth discovery per origin, CIMD, rate limiting, consent page (escaping, deny, wrong password, cookie and handle checks, error pages), PKCE token exchange, refresh, single-use codes, legacy and 2026-07-28 MCP clients, `/mcp/`, batch rejection, sign-out on `API_KEY` change |
