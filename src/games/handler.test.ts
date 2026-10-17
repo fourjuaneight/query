@@ -118,11 +118,11 @@ describe('Games handlers', () => {
       expect(res.status).toBe(200);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       setupErrorMock();
 
       const res = await app.request('/games/search?query=witcher', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
@@ -152,11 +152,11 @@ describe('Games handlers', () => {
       expect(body.error).toContain('No game found');
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       setupErrorMock();
 
       const res = await app.request('/games/query?title=witcher', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
     });
   });
 
@@ -191,11 +191,11 @@ describe('Games handlers', () => {
       expect(body.error).toContain('No game found');
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       setupErrorMock();
 
       const res = await app.request('/games/1942', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
     });
   });
 
