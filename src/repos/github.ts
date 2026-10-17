@@ -9,6 +9,9 @@ import { buildUrl, upstreamFetch } from '../common/helpers';
 
 const GITHUB_API_URL = 'https://api.github.com';
 
+/** GitHub search only exposes the first 1000 results */
+const MAX_SEARCH_RESULTS = 1000;
+
 /**
  * Make a request to the GitHub API
  * DOCS: https://docs.github.com/en/rest
@@ -76,6 +79,9 @@ export const searchRepos = async (
   return {
     results: response.items.map(normalizeRepoData),
     totalResults: response.total_count,
+    totalPages: Math.ceil(
+      Math.min(response.total_count, MAX_SEARCH_RESULTS) / perPage,
+    ),
     page,
   };
 };

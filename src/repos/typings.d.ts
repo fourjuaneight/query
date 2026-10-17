@@ -48,6 +48,7 @@ export interface RepoData {
 export interface RepoSearchResponse {
   results: RepoData[];
   totalResults: number;
+  totalPages: number;
   page: number;
 }
 
