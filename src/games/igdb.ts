@@ -57,6 +57,12 @@ const getAccessToken = async (env: IGDBEnv): Promise<string> => {
 };
 
 /**
+ * Escape a value for use inside an Apicalypse string literal
+ */
+const escapeApicalypse = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+/**
  * Build a cover image URL from an image_id
  * DOCS: https://api-docs.igdb.com/#images
  */
@@ -139,7 +145,7 @@ export const searchGames = async (
   options: IGDBQueryOptions = {},
 ): Promise<GameData[]> => {
   const body = `
-    search "${query}";
+    search "${escapeApicalypse(query)}";
     ${GAME_FIELDS}
     where version_parent = null;
     limit ${options.limit ?? 10};
