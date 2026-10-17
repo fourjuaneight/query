@@ -7,6 +7,7 @@ export interface TMDBTVSearchResult {
   original_name: string;
   first_air_date: string;
   overview: string;
+  genre_ids?: number[];
   poster_path: string | null;
   backdrop_path: string | null;
   popularity: number;
@@ -89,15 +90,16 @@ export interface TMDBTVDetails {
 
 // Normalized Output Types
 export interface TVShowData {
+  id: number;
   title: string;
   firstAirDate: string;
-  lastAirDate: string;
+  lastAirDate: string | null;
   creators: string[];
   genres: string[];
-  seasonCount: number;
-  episodeCount: number;
+  seasonCount: number | null;
+  episodeCount: number | null;
   overview: string;
-  status: string;
+  status: string | null;
   posterUrl: string | null;
 }
 

@@ -224,4 +224,49 @@ describe('Shows handlers', () => {
       expect(body.data.posterUrl).toBeNull();
     });
   });
+
+  describe('GET /shows/search?details=false', () => {
+    it('skips per-result detail requests', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        const { pathname } = new URL(url);
+        const payload = pathname.endsWith('/genre/tv/list')
+          ? { genres: [{ id: 18, name: 'Drama' }] }
+          : {
+              ...searchResponse,
+              results: [
+                {
+                  id: 1396,
+                  name: 'Breaking Bad',
+                  first_air_date: '2008-01-20',
+                  overview: 'A chemistry teacher...',
+                  genre_ids: [18],
+                  poster_path: '/bb.jpg',
+                },
+              ],
+            };
+        return Promise.resolve(
+          new Response(JSON.stringify(payload), { status: 200 }),
+        );
+      });
+
+      const res = await app.request(
+        '/shows/search?query=breaking+bad&details=false',
+        {},
+        env,
+      );
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      const body = await res.json<ApiBody>();
+      expect(body.data.results[0]).toMatchObject({
+        id: 1396,
+        title: 'Breaking Bad',
+        genres: ['Drama'],
+        creators: [],
+        seasonCount: null,
+        status: null,
+      });
+      expect(body.data.results[0].posterUrl).toContain('/bb.jpg');
+    });
+  });
 });
