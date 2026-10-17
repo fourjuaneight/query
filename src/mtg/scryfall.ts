@@ -119,7 +119,7 @@ export const getMTGCard = async (
         oracle_text: oText,
         flavor_text: fText,
         rarity,
-        collector_number: parseInt(collector_number, 10),
+        collector_number,
         artist,
         released_at,
         image: image_uris?.png ?? card_faces?.[0]?.image_uris?.png ?? '',
