@@ -7,7 +7,7 @@
     "clean": "rm -rf dist",
     "clean:node": "rm -rf node_modules",
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev src/app.ts",
+    "dev": "wrangler dev",
     "dev:local": "tsx --env-file .env src/server.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint --fix \"src/**/*.ts\"",
@@ -30,12 +30,16 @@
     ]
   },
   "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.3",
     "@hono/node-server": "^2.1.5",
-    "hono": "^4.13.13"
+    "@modelcontextprotocol/server": "^2.3.1",
+    "hono": "^4.13.13",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261016.1",
     "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/client": "^2.3.1",
     "@types/node": "^26.6.5",
     "@vitest/coverage-v8": "5.0.5",
     "eslint": "^10.12.0",

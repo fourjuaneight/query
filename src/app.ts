@@ -4,11 +4,12 @@ import { bearerAuth } from 'hono/bearer-auth';
 import { cache } from 'hono/cache';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
-import { HTTPException } from 'hono/http-exception';
 import { logger } from 'hono/logger';
 
 import type { AppEnv } from './common/typings';
 import { errorResponse } from './common/helpers';
+import { rateLimit } from './common/middleware';
+import { handleAuthorizeDecision, handleAuthorizePage } from './auth/authorize';
 import { handleBookByISBN, handleBookSearch } from './books/handler';
 import {
   handleGameSearch,
@@ -47,6 +48,11 @@ app.use('*', cors());
 // Health check
 app.get('/', ctx => ctx.text('Why are you here?'));
 
+// MCP OAuth consent page: signs in with the API_KEY password instead of the
+// bearer header, so it is registered before the auth and cache middleware
+app.get('/authorize', rateLimit, handleAuthorizePage);
+app.post('/authorize', rateLimit, handleAuthorizeDecision);
+
 // Auth: enforced only when the API_KEY secret is configured
 const requireApiKey = createMiddleware<AppEnv>(async (ctx, next) => {
   const token = ctx.env?.API_KEY;
@@ -59,19 +65,6 @@ const requireApiKey = createMiddleware<AppEnv>(async (ctx, next) => {
     invalidToken: { message: unauthorized },
   });
   return auth(ctx, next);
-});
-
-// Rate limit: enforced only when the RATE_LIMITER binding exists
-const rateLimit = createMiddleware<AppEnv>(async (ctx, next) => {
-  const limiter = ctx.env?.RATE_LIMITER;
-  if (!limiter) return next();
-
-  const key = ctx.req.header('cf-connecting-ip') ?? 'anonymous';
-  const { success } = await limiter.limit({ key });
-  if (!success) {
-    throw new HTTPException(429, { message: 'Too Many Requests' });
-  }
-  return next();
 });
 
 app.use('*', requireApiKey, rateLimit);
