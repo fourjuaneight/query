@@ -1,59 +1,41 @@
 import type { Context } from 'hono';
 
-import type { Bindings } from '../common/typings';
+import type { AppEnv } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
+import {
+  enumQuery,
+  intQuery,
+  optionalQuery,
+  requireQuery,
+} from '../common/params';
 import { searchRepos, queryRepo } from './github';
 
+const SORTS = ['stars', 'forks', 'help-wanted-issues', 'updated'] as const;
+const ORDERS = ['asc', 'desc'] as const;
+
 export const handleRepoSearch = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const query = ctx.req.query('query');
-  if (!query) {
-    return jsonError(ctx, 'Missing required query parameter: query');
-  }
+  const query = requireQuery(ctx, 'query');
 
-  const language = ctx.req.query('language');
-  const sort = ctx.req.query('sort') as
-    | 'stars'
-    | 'forks'
-    | 'help-wanted-issues'
-    | 'updated'
-    | undefined;
-  const order = ctx.req.query('order') as 'asc' | 'desc' | undefined;
-  const page = ctx.req.query('page');
-  const perPage = ctx.req.query('per_page');
-
-  try {
-    const results = await searchRepos(ctx.env.GH_TOKEN, query, {
-      ...(language && { language }),
-      ...(sort && { sort }),
-      ...(order && { order }),
-      ...(page && { page: parseInt(page, 10) }),
-      ...(perPage && { perPage: parseInt(perPage, 10) }),
-    });
-    return jsonSuccess(ctx, results);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const results = await searchRepos(ctx.env.GH_TOKEN, query, {
+    language: optionalQuery(ctx, 'language'),
+    sort: enumQuery(ctx, 'sort', SORTS),
+    order: enumQuery(ctx, 'order', ORDERS),
+    page: intQuery(ctx, 'page'),
+    perPage: intQuery(ctx, 'per_page', { max: 100 }),
+  });
+  return jsonSuccess(ctx, results);
 };
 
 export const handleRepoQuery = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const name = ctx.req.query('name');
-  if (!name) {
-    return jsonError(ctx, 'Missing required query parameter: name');
-  }
+  const name = requireQuery(ctx, 'name');
 
-  try {
-    const result = await queryRepo(ctx.env.GH_TOKEN, name);
-    if (!result) {
-      return jsonError(ctx, `No repo found for name: ${name}`, 404);
-    }
-    return jsonSuccess(ctx, result);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
+  const result = await queryRepo(ctx.env.GH_TOKEN, name);
+  if (!result) {
+    return jsonError(ctx, `No repo found for name: ${name}`, 404);
   }
+  return jsonSuccess(ctx, result);
 };
