@@ -12,6 +12,7 @@ const env: Bindings = {
   DISCOGS_TOKEN: process.env['DISCOGS_TOKEN'] ?? '',
   GH_TOKEN: process.env['GH_TOKEN'] ?? '',
   YOUTUBE_KEY: process.env['YOUTUBE_KEY'] ?? '',
+  API_KEY: process.env['API_KEY'],
 };
 
 console.log(`Server running at http://localhost:${port}`);
