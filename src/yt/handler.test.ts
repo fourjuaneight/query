@@ -123,12 +123,34 @@ describe('YouTube handler', () => {
       expect(body.success).toBe(true);
     });
 
+    it('returns video data for a share link with ?si=', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify(youtubeResponse), { status: 200 }),
+      );
+
+      const res = await app.request(
+        `/yt/video?url=${encodeURIComponent('https://youtu.be/dQw4w9WgXcQ?si=abc123')}`,
+        {},
+        env,
+      );
+      expect(res.status).toBe(200);
+
+      const calledUrl = new URL(mockFetch.mock.calls[0]![0] as string);
+      expect(calledUrl.searchParams.get('id')).toBe('dQw4w9WgXcQ');
+    });
+
+    it('returns 400 for an unrecognized URL or ID', async () => {
+      const res = await app.request('/yt/video?url=invalid-id', {}, env);
+      expect(res.status).toBe(400);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
     it('returns 404 when no video is found', async () => {
       mockFetch.mockResolvedValue(
         new Response(JSON.stringify(emptyResponse), { status: 200 }),
       );
 
-      const res = await app.request('/yt/video?url=invalid-id', {}, env);
+      const res = await app.request('/yt/video?url=aaaaaaaaaaa', {}, env);
       expect(res.status).toBe(404);
     });
 
