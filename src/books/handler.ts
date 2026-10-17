@@ -1,50 +1,31 @@
 import type { Context } from 'hono';
 
-import type { Bindings } from '../common/typings';
+import type { AppEnv } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
+import { intQuery, optionalQuery, requireQuery } from '../common/params';
 import { queryBookByISBN, searchBooksByTitle } from './openlibrary';
 
 export const handleBookByISBN = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const isbn = ctx.req.query('isbn');
-  if (!isbn) {
-    return jsonError(ctx, 'Missing required query parameter: isbn');
-  }
+  const isbn = requireQuery(ctx, 'isbn');
 
-  try {
-    const result = await queryBookByISBN(isbn);
-    if (!result) {
-      return jsonError(ctx, `No book found for ISBN: ${isbn}`, 404);
-    }
-    return jsonSuccess(ctx, result);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
+  const result = await queryBookByISBN(isbn);
+  if (!result) {
+    return jsonError(ctx, `No book found for ISBN: ${isbn}`, 404);
   }
+  return jsonSuccess(ctx, result);
 };
 
 export const handleBookSearch = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const title = ctx.req.query('title');
-  if (!title) {
-    return jsonError(ctx, 'Missing required query parameter: title');
-  }
+  const title = requireQuery(ctx, 'title');
 
-  const limit = ctx.req.query('limit');
-  const page = ctx.req.query('page');
-  const language = ctx.req.query('language');
-
-  try {
-    const results = await searchBooksByTitle(title, {
-      ...(limit && { limit: parseInt(limit, 10) }),
-      ...(page && { page: parseInt(page, 10) }),
-      ...(language && { language }),
-    });
-    return jsonSuccess(ctx, results);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const results = await searchBooksByTitle(title, {
+    limit: intQuery(ctx, 'limit', { max: 100 }),
+    page: intQuery(ctx, 'page'),
+    language: optionalQuery(ctx, 'language'),
+  });
+  return jsonSuccess(ctx, results);
 };
