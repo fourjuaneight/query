@@ -19,32 +19,30 @@ jobs:
           fetch-depth: 0
 
       - name: Set up git-cliff
-        uses: kenji-miyake/setup-git-cliff@v1
+        uses: kenji-miyake/setup-git-cliff@v2
 
       - name: Generate Changelog
         run: git cliff -v -o CHANGELOG.md -c cliff.toml
 
       - name: Update Changelog
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           branch: main
           commit_message: 'chore: Update Changelog.'
 
-      - name: Date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      - name: Tag Link
-        id: tagLink
-        run: echo "::set-output name=link::$(echo $GITHUB_REF_NAME | sed 's/v//g' | sed 's/\.//g')"
-
-      - name: Tag Name
-        id: tagName
-        run: echo "::set-output name=name::$(echo $GITHUB_REF_NAME | sed 's/v//g')"
+      - name: Release metadata
+        id: meta
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "date=$(date +'%Y-%m-%d')"
+            echo "name=${version}"
+            echo "link=${version//./}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "${{ steps.tagName.outputs.name }}"
-          body: "See [Changelog](${{ github.server_url }}/${{ github.repository }}/blob/main/CHANGELOG.md#${{ steps.tagLink.outputs.link }}---${{ steps.date.outputs.date }}) for release notes."
+          name: "${{ steps.meta.outputs.name }}"
+          body: "See [Changelog](${{ github.server_url }}/${{ github.repository }}/blob/main/CHANGELOG.md#${{ steps.meta.outputs.link }}---${{ steps.meta.outputs.date }}) for release notes."
