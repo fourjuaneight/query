@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { MiddlewareHandler } from 'hono';
 import { bearerAuth } from 'hono/bearer-auth';
+import { cache } from 'hono/cache';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
@@ -74,6 +75,16 @@ const rateLimit = createMiddleware<AppEnv>(async (ctx, next) => {
 });
 
 app.use('*', requireApiKey, rateLimit);
+
+// Cache successful responses at the edge (no-op where the Cache API is unavailable)
+app.get(
+  '*',
+  cache({
+    cacheName: 'query',
+    cacheControl: 'max-age=3600',
+    onCacheNotAvailable: false,
+  }),
+);
 
 // --- Books ---
 app.get('/books/isbn', handleBookByISBN);
