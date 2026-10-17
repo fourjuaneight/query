@@ -1,7 +1,8 @@
-import { buildPosterUrl, tmdbFetch } from '../common/helpers';
+import { buildPosterUrl, tmdbFetch, tmdbGenres } from '../common/helpers';
 import type { TMDBQueryOptions } from '../common/typings';
 import type {
   TMDBMovieSearchResponse,
+  TMDBMovieSearchResult,
   TMDBMovieDetails,
   MovieData,
   MovieSearchResponse,
@@ -41,6 +42,7 @@ const getMovieDetails = async (
  * Normalize TMDB movie details into a MovieData object
  */
 const normalizeMovie = (details: TMDBMovieDetails): MovieData => ({
+  id: details.id,
   title: details.title,
   releaseDate: details.release_date,
   director:
@@ -50,6 +52,23 @@ const normalizeMovie = (details: TMDBMovieDetails): MovieData => ({
   runtime: details.runtime,
   overview: details.overview,
   posterUrl: buildPosterUrl(details.poster_path),
+});
+
+/**
+ * Normalize a TMDB search result into a MovieData object without details
+ */
+const normalizeSearchResult = (
+  movie: TMDBMovieSearchResult,
+  genres: Map<number, string>,
+): MovieData => ({
+  id: movie.id,
+  title: movie.title,
+  releaseDate: movie.release_date,
+  director: null,
+  genres: (movie.genre_ids ?? []).flatMap(id => genres.get(id) ?? []),
+  runtime: null,
+  overview: movie.overview,
+  posterUrl: buildPosterUrl(movie.poster_path),
 });
 
 /**
@@ -93,7 +112,9 @@ export const queryMovieById = async (
 
 /**
  * Search movies and return multiple results
- * Useful when you want to let users pick from search results
+ * Useful when you want to let users pick from search results.
+ * With `details: false`, skips the per-result details request
+ * (director and runtime are null) and makes 2 requests instead of 21.
  *
  * @param query - Search query
  * @param options - Query options including pagination
@@ -106,11 +127,21 @@ export const searchMovies = async (
 ): Promise<MovieSearchResponse> => {
   const response = await searchMovie(apiKey, query, options);
 
-  const results = await Promise.all(
-    response.results.map(async movie =>
-      normalizeMovie(await getMovieDetails(apiKey, movie.id, options.language)),
-    ),
-  );
+  let results: MovieData[];
+  if (options.details === false) {
+    const genres = await tmdbGenres(apiKey, 'movie', options.language);
+    results = response.results.map(movie =>
+      normalizeSearchResult(movie, genres),
+    );
+  } else {
+    results = await Promise.all(
+      response.results.map(async movie =>
+        normalizeMovie(
+          await getMovieDetails(apiKey, movie.id, options.language),
+        ),
+      ),
+    );
+  }
 
   return {
     results,

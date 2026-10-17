@@ -244,4 +244,50 @@ describe('Movies handlers', () => {
       expect(body.data.posterUrl).toBeNull();
     });
   });
+
+  describe('GET /movies/search?details=false', () => {
+    it('skips per-result detail requests', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        const { pathname } = new URL(url);
+        const payload = pathname.endsWith('/genre/movie/list')
+          ? { genres: [{ id: 18, name: 'Drama' }] }
+          : {
+              ...searchResponse,
+              results: [
+                {
+                  id: 550,
+                  title: 'Fight Club',
+                  release_date: '1999-10-15',
+                  overview: 'An insomniac...',
+                  genre_ids: [18, 999],
+                  poster_path: null,
+                },
+              ],
+            };
+        return Promise.resolve(
+          new Response(JSON.stringify(payload), { status: 200 }),
+        );
+      });
+
+      const res = await app.request(
+        '/movies/search?query=fight+club&details=false',
+        {},
+        env,
+      );
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      const body = await res.json<ApiBody>();
+      expect(body.data.results[0]).toEqual({
+        id: 550,
+        title: 'Fight Club',
+        releaseDate: '1999-10-15',
+        director: null,
+        genres: ['Drama'],
+        runtime: null,
+        overview: 'An insomniac...',
+        posterUrl: null,
+      });
+    });
+  });
 });

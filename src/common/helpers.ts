@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
-import type { AppEnv } from './typings';
+import type { AppEnv, Genre } from './typings';
 import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
 
 type QueryParams = Record<string, string | number | undefined>;
@@ -117,6 +117,28 @@ export const tmdbFetch = async <T>(
     'TMDB',
     buildUrl(`${TMDB_BASE_URL}${endpoint}`, { api_key: apiKey, ...params }),
   );
+
+/**
+ * Fetch the TMDB genre list as an id → name map
+ * DOCS: https://developer.themoviedb.org/reference/genre-movie-list
+ *
+ * @param apiKey - The TMDB API key from env bindings
+ * @param media - Which genre list to fetch
+ * @param language - Optional language code (default: "en-US")
+ * @returns Map of genre ID to genre name
+ */
+export const tmdbGenres = async (
+  apiKey: string,
+  media: 'movie' | 'tv',
+  language = 'en-US',
+): Promise<Map<number, string>> => {
+  const { genres } = await tmdbFetch<{ genres: Genre[] }>(
+    apiKey,
+    `/genre/${media}/list`,
+    { language },
+  );
+  return new Map(genres.map(genre => [genre.id, genre.name]));
+};
 
 /**
  * Standard JSON success response.

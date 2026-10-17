@@ -22,4 +22,6 @@ export interface TMDBQueryOptions {
   language?: string;
   year?: number;
   page?: number;
+  /** Search only: fetch full details for every result (default true) */
+  details?: boolean;
 }
