@@ -24,6 +24,7 @@ export interface TMDBMovieSearchResult {
   original_title: string;
   release_date: string;
   overview: string;
+  genre_ids?: number[];
   poster_path: string | null;
   backdrop_path: string | null;
   popularity: number;
@@ -62,11 +63,12 @@ export interface TMDBMovieDetails {
 
 // Normalized Output Types
 export interface MovieData {
+  id: number;
   title: string;
   releaseDate: string;
   director: string | null;
   genres: string[];
-  runtime: number;
+  runtime: number | null;
   overview: string;
   posterUrl: string | null;
 }

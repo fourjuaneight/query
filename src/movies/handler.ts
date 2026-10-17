@@ -3,6 +3,7 @@ import type { Context } from 'hono';
 import type { AppEnv } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
 import {
+  boolQuery,
   idParam,
   intQuery,
   optionalQuery,
@@ -49,6 +50,7 @@ export const handleMovieSearch = async (
     language: optionalQuery(ctx, 'language'),
     year: intQuery(ctx, 'year', YEAR_RANGE),
     page: intQuery(ctx, 'page', { max: 500 }),
+    details: boolQuery(ctx, 'details'),
   });
   return jsonSuccess(ctx, results);
 };
