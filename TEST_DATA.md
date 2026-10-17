@@ -2,6 +2,12 @@
 
 Sample `curl` commands for every endpoint. All examples assume the server is running locally on `http://localhost:8787`.
 
+If `API_KEY` is set, add the bearer token to every request except the health check:
+
+```sh
+curl -H "Authorization: Bearer $API_KEY" "http://localhost:8787/books/search?title=Dune"
+```
+
 ## Health Check
 
 ```sh
@@ -65,6 +71,9 @@ curl "http://localhost:8787/movies/search?query=interstellar"
 # Search with optional params
 curl "http://localhost:8787/movies/search?query=batman&language=en-US&year=2022&page=1"
 
+# Search without per-result details (2 upstream requests instead of 21; director and runtime are null)
+curl "http://localhost:8787/movies/search?query=batman&details=false"
+
 # Get a movie by TMDB ID
 curl "http://localhost:8787/movies/550"
 
@@ -86,6 +95,9 @@ curl "http://localhost:8787/shows/search?query=the+wire"
 
 # Search with optional params
 curl "http://localhost:8787/shows/search?query=stranger+things&language=en-US&year=2016&page=1"
+
+# Search without per-result details (creators, counts, and status are empty)
+curl "http://localhost:8787/shows/search?query=the+wire&details=false"
 
 # Get a TV show by TMDB ID
 curl "http://localhost:8787/shows/1396"
@@ -135,6 +147,9 @@ curl "http://localhost:8787/pkm/cards?name=Charizard"
 
 # Search with a specific set
 curl "http://localhost:8787/pkm/cards?name=Pikachu&set=base1"
+
+# Paginate large result sets (default limit 20, max 40)
+curl "http://localhost:8787/pkm/cards?name=Pikachu&limit=10&page=2"
 ```
 
 ## Repos
@@ -146,8 +161,14 @@ curl "http://localhost:8787/repos/search?query=hono"
 # Search with optional filters
 curl "http://localhost:8787/repos/search?query=typescript+framework&language=typescript&sort=stars&order=desc&page=1&per_page=5"
 
-# Query a single repo by full name (owner/repo)
+# Search ranked by relevance instead of stars
+curl "http://localhost:8787/repos/search?query=edge+web+framework&sort=best-match"
+
+# Query a single repo by full name (owner/repo), fetched directly
 curl "http://localhost:8787/repos/query?name=honojs/hono"
+
+# Query by bare name (returns the best search match)
+curl "http://localhost:8787/repos/query?name=hono"
 ```
 
 ## YouTube
@@ -158,6 +179,12 @@ curl "http://localhost:8787/yt/video?url=https://youtu.be/DeGFRB0Mor8"
 
 # Get video details by full URL
 curl "http://localhost:8787/yt/video?url=https://www.youtube.com/watch?v=DeGFRB0Mor8"
+
+# Get video details by share link (URL-encode it so ?si= stays part of the url param)
+curl "http://localhost:8787/yt/video?url=https%3A%2F%2Fyoutu.be%2FDeGFRB0Mor8%3Fsi%3Dabc123"
+
+# Get video details by Shorts URL
+curl "http://localhost:8787/yt/video?url=https://www.youtube.com/shorts/DeGFRB0Mor8"
 
 # Get video details by video ID
 curl "http://localhost:8787/yt/video?url=DeGFRB0Mor8"
