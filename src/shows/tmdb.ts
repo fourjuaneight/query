@@ -15,14 +15,13 @@ const searchTVShow = async (
   apiKey: string,
   query: string,
   options: TMDBQueryOptions = {},
-): Promise<TMDBTVSearchResponse> => {
-  return tmdbFetch<TMDBTVSearchResponse>(apiKey, '/search/tv', {
+): Promise<TMDBTVSearchResponse> =>
+  tmdbFetch<TMDBTVSearchResponse>(apiKey, '/search/tv', {
     query,
     language: options.language ?? 'en-US',
     page: options.page ?? 1,
-    ...(options.year && { first_air_date_year: options.year }),
+    first_air_date_year: options.year,
   });
-};
 
 /**
  * Get detailed TV show information by ID (including aggregate credits)
@@ -32,12 +31,27 @@ const getTVShowDetails = async (
   apiKey: string,
   seriesId: number,
   language = 'en-US',
-): Promise<TMDBTVDetails> => {
-  return tmdbFetch<TMDBTVDetails>(apiKey, `/tv/${seriesId}`, {
+): Promise<TMDBTVDetails> =>
+  tmdbFetch<TMDBTVDetails>(apiKey, `/tv/${seriesId}`, {
     language,
     append_to_response: 'aggregate_credits',
   });
-};
+
+/**
+ * Normalize TMDB TV show details into a TVShowData object
+ */
+const normalizeTVShow = (details: TMDBTVDetails): TVShowData => ({
+  title: details.name,
+  firstAirDate: details.first_air_date,
+  lastAirDate: details.last_air_date,
+  creators: details.created_by.map(creator => creator.name),
+  genres: details.genres.map(genre => genre.name),
+  seasonCount: details.number_of_seasons,
+  episodeCount: details.number_of_episodes,
+  overview: details.overview,
+  status: details.status,
+  posterUrl: buildPosterUrl(details.poster_path),
+});
 
 /**
  * Query TV show data by title
@@ -52,48 +66,15 @@ export const queryTVShow = async (
   title: string,
   options: TMDBQueryOptions = {},
 ): Promise<TVShowData | null> => {
-  try {
-    // Search for the TV show
-    const searchResults = await searchTVShow(apiKey, title, options);
+  const { results } = await searchTVShow(apiKey, title, options);
 
-    if (searchResults.results.length === 0) {
-      return null;
-    }
+  // Get the first (most relevant) result
+  const [first] = results;
+  if (!first) return null;
 
-    // Get the first (most relevant) result
-    const firstResult = searchResults.results[0];
-    if (!firstResult) {
-      return null;
-    }
-    const seriesId = firstResult.id;
-
-    // Fetch detailed information with aggregate credits
-    const details = await getTVShowDetails(apiKey, seriesId, options.language);
-
-    // Extract creators
-    const creators = details.created_by.map(creator => creator.name);
-
-    return {
-      title: details.name,
-      firstAirDate: details.first_air_date,
-      lastAirDate: details.last_air_date,
-      creators,
-      genres: details.genres.map(genre => genre.name),
-      seasonCount: details.number_of_seasons,
-      episodeCount: details.number_of_episodes,
-      overview: details.overview,
-      status: details.status,
-      posterUrl: buildPosterUrl(details.poster_path),
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryTVShow] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryTVShow] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  return normalizeTVShow(
+    await getTVShowDetails(apiKey, first.id, options.language),
+  );
 };
 
 /**
@@ -108,34 +89,8 @@ export const queryTVShowById = async (
   apiKey: string,
   seriesId: number,
   language = 'en-US',
-): Promise<TVShowData> => {
-  try {
-    const details = await getTVShowDetails(apiKey, seriesId, language);
-
-    const creators = details.created_by.map(creator => creator.name);
-
-    return {
-      title: details.name,
-      firstAirDate: details.first_air_date,
-      lastAirDate: details.last_air_date,
-      creators,
-      genres: details.genres.map(genre => genre.name),
-      seasonCount: details.number_of_seasons,
-      episodeCount: details.number_of_episodes,
-      overview: details.overview,
-      status: details.status,
-      posterUrl: buildPosterUrl(details.poster_path),
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryTVShowById] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryTVShowById] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
-};
+): Promise<TVShowData> =>
+  normalizeTVShow(await getTVShowDetails(apiKey, seriesId, language));
 
 /**
  * Search TV shows and return multiple results
@@ -150,47 +105,20 @@ export const searchTVShows = async (
   query: string,
   options: TMDBQueryOptions = {},
 ): Promise<TVShowSearchResponse> => {
-  try {
-    const response = await searchTVShow(apiKey, query, options);
+  const response = await searchTVShow(apiKey, query, options);
 
-    const results = await Promise.all(
-      response.results.map(async show => {
-        const details = await getTVShowDetails(
-          apiKey,
-          show.id,
-          options.language,
-        );
+  const results = await Promise.all(
+    response.results.map(async show =>
+      normalizeTVShow(
+        await getTVShowDetails(apiKey, show.id, options.language),
+      ),
+    ),
+  );
 
-        const creators = details.created_by.map(creator => creator.name);
-
-        return {
-          title: details.name,
-          firstAirDate: details.first_air_date,
-          lastAirDate: details.last_air_date,
-          creators,
-          genres: details.genres.map(genre => genre.name),
-          seasonCount: details.number_of_seasons,
-          episodeCount: details.number_of_episodes,
-          overview: details.overview,
-          status: details.status,
-          posterUrl: buildPosterUrl(details.poster_path),
-        };
-      }),
-    );
-
-    return {
-      results,
-      totalResults: response.total_results,
-      totalPages: response.total_pages,
-      page: response.page,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[searchTVShows] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[searchTVShows] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  return {
+    results,
+    totalResults: response.total_results,
+    totalPages: response.total_pages,
+    page: response.page,
+  };
 };
