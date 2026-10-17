@@ -83,7 +83,7 @@ describe('MTG handler', () => {
       expect(body.success).toBe(false);
     });
 
-    it('handles Scryfall error response', async () => {
+    it('returns an empty array when Scryfall finds no cards (404)', async () => {
       const errorResponse = {
         object: 'error',
         code: 'not_found',
@@ -92,17 +92,17 @@ describe('MTG handler', () => {
       };
 
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify(errorResponse), { status: 200 }),
+        new Response(JSON.stringify(errorResponse), { status: 404 }),
       );
 
       const res = await app.request('/mtg/cards?name=xyznonexistent');
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(200);
 
       const body = await res.json<ApiBody>();
-      expect(body.success).toBe(false);
+      expect(body).toEqual({ success: true, data: [] });
     });
 
-    it('handles Scryfall error with warnings', async () => {
+    it('returns 400 with Scryfall warnings for a rejected query', async () => {
       const warningResponse = {
         object: 'error',
         code: 'bad_request',
@@ -112,14 +112,17 @@ describe('MTG handler', () => {
       };
 
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify(warningResponse), { status: 200 }),
+        new Response(JSON.stringify(warningResponse), { status: 400 }),
       );
 
-      const res = await app.request('/mtg/cards?name=test');
-      expect(res.status).toBe(500);
+      const res = await app.request('/mtg/cards?name=test&set=zzz');
+      expect(res.status).toBe(400);
 
       const body = await res.json<ApiBody>();
-      expect(body.success).toBe(false);
+      expect(body).toEqual({
+        success: false,
+        error: 'Scryfall: Invalid set code - Check your input',
+      });
     });
 
     it('sends required headers and an encoded query', async () => {
