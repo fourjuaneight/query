@@ -192,7 +192,7 @@ curl "http://localhost:8787/yt/video?url=DeGFRB0Mor8"
 
 ## MCP
 
-The MCP endpoint needs an OAuth token, so test it with an MCP client instead of `curl`. Start `pnpm dev` with `PUBLIC_URL=http://localhost:8787` and `API_KEY` in `.dev.vars`, then run `npx @modelcontextprotocol/inspector`, connect to `http://localhost:8787/mcp` and sign in with the `API_KEY` password.
+The MCP endpoint needs an OAuth token, so test it with an MCP client instead of `curl`. Start `pnpm dev` with `API_KEY` (and the API credentials) in `.dev.vars`, then run `npx @modelcontextprotocol/inspector`, connect to `http://localhost:8787/mcp` and sign in with the `API_KEY` password.
 
 ```sh
 # Check the OAuth discovery documents and the 401 challenge
@@ -210,7 +210,7 @@ Sample tool calls (tool name and arguments, as entered in the Inspector or sent 
 
 // Games
 { "name": "find_game", "arguments": { "title": "Hades" } }
-{ "name": "get_game", "arguments": { "id": 1942 } }
+{ "name": "get_game", "arguments": { "id": 1942 } }  // the id comes from search_games or find_game
 
 // Manga
 { "name": "search_manga", "arguments": { "title": "Berserk", "limit": 3 } }
