@@ -24,6 +24,17 @@ or on error:
 { "success": false, "error": "..." }
 ```
 
+Error status codes:
+
+| Status | Meaning |
+|---|---|
+| `400` | Missing or invalid parameter (e.g. `limit=abc`, `sort=popular`) |
+| `401` | Missing or wrong API key (only when `API_KEY` is set) |
+| `404` | Nothing found, or the upstream service has no such resource |
+| `429` | Rate limit exceeded (ours or the upstream service's) |
+| `502` | The upstream service failed; details are logged, not returned |
+| `500` | Unexpected internal error |
+
 ## Documentation
 
 Links to the upstream API documentation for every integrated service:
