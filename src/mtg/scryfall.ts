@@ -5,7 +5,9 @@ import type {
   ScryfallError,
   ScryfallSearch,
 } from './typings.d';
-import { upstreamFetch } from '../common/helpers';
+import { buildUrl, upstreamFetch } from '../common/helpers';
+
+const SCRYFALL_SEARCH_URL = 'https://api.scryfall.com/cards/search';
 
 const magicColors: Record<string, string> = {
   W: 'White',
@@ -35,20 +37,27 @@ const isScryfallError = (
 export const getMTGCard = async (
   queryTerm: RequestQuery,
 ): Promise<MTGItem[]> => {
-  const encodedName = encodeURIComponent(queryTerm.name);
+  // Scryfall search syntax: set and collector number are optional filters
+  const query = [
+    queryTerm.name,
+    queryTerm.set && `s:${queryTerm.set}`,
+    queryTerm.number && `cn:${queryTerm.number}`,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  // Build query string with optional set and number filters
-  let query = encodedName;
-  if (queryTerm.set) {
-    query += `+s:${queryTerm.set}`;
-  }
-  if (queryTerm.number) {
-    query += `+cn:${queryTerm.number}`;
-  }
+  const url = buildUrl(SCRYFALL_SEARCH_URL, { order: 'set', q: query });
 
+  // Scryfall requires an explicit User-Agent and Accept header
   const response = await upstreamFetch<ScryfallSearch | ScryfallError>(
     'Scryfall',
-    `https://api.scryfall.com/cards/search?order=set&q=${query}`,
+    url,
+    {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'QueryAPI/1.0',
+      },
+    },
   );
 
   if (isScryfallError(response)) {

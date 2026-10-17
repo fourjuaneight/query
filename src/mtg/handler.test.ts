@@ -122,6 +122,26 @@ describe('MTG handler', () => {
       expect(body.success).toBe(false);
     });
 
+    it('sends required headers and an encoded query', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify(scryfallResponse), { status: 200 }),
+      );
+
+      await app.request('/mtg/cards?name=Sol+Ring&set=c21&number=263');
+
+      const [calledUrl, init] = mockFetch.mock.calls[0]! as [
+        string,
+        RequestInit,
+      ];
+      expect(new URL(calledUrl).searchParams.get('q')).toBe(
+        'Sol Ring s:c21 cn:263',
+      );
+      expect(init.headers).toMatchObject({
+        Accept: 'application/json',
+        'User-Agent': 'QueryAPI/1.0',
+      });
+    });
+
     it('handles card with card_faces (double-faced)', async () => {
       const doubleFaced = {
         object: 'list',
