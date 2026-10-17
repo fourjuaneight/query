@@ -66,6 +66,15 @@ The following environment variables must be set. Configure them as [Wrangler sec
 
 > **Note:** OpenLibrary, MangaDex, Scryfall, and TCGdex do not require authentication tokens.
 
+### Access control
+
+| Variable / binding | Purpose |
+|---|---|
+| `API_KEY` (optional secret) | When set, every route except `/` requires `Authorization: Bearer <API_KEY>`. When unset, the API is open. |
+| `RATE_LIMITER` (binding in [`wrangler.toml`](wrangler.toml)) | Per-IP limit of 60 requests per 60 seconds. Remove the `[[ratelimits]]` block to disable. |
+
+Successful `GET` responses are cached for one hour (`Cache-Control: max-age=3600`) using the Workers Cache API. Cloudflare documents the Cache API as functional on custom domains.
+
 ## Install
 
 **Prerequisites:** Node.js and [pnpm](https://pnpm.io/).
@@ -193,6 +202,9 @@ wrangler secret put TWITCH_CLIENT_SECRET
 wrangler secret put DISCOGS_TOKEN
 wrangler secret put GH_TOKEN
 wrangler secret put YOUTUBE_KEY
+
+# Optional: require a bearer token on every route
+wrangler secret put API_KEY
 ```
 
 For more details, see the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/).
