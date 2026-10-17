@@ -105,13 +105,13 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 | Endpoint | Parameters | Description |
 |---|---|---|
 | `/books/isbn` | `isbn` (required) | Look up a book by ISBN |
-| `/books/search` | `title` (required), `limit`, `page`, `language` | Search books by title |
+| `/books/search` | `title` (required), `limit` (max 100), `page`, `language` | Search books by title |
 
 ### Games
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/games/search` | `query` (required), `limit` | Search games |
+| `/games/search` | `query` (required), `limit` (max 500) | Search games |
 | `/games/query` | `title` (required) | Query a single game by title |
 | `/games/:id` | `:id` (path) | Get a game by IGDB ID |
 
@@ -119,57 +119,57 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/manga/search` | `title` (required), `limit`, `offset` | Search manga by title |
-| `/manga/:id` | `:id` (path) | Get manga details by MangaDex ID |
+| `/manga/search` | `title` (required), `limit` (max 100), `offset` | Search manga by title |
+| `/manga/:id` | `:id` (path, UUID) | Get manga details by MangaDex ID |
 
 ### Movies
 
 | Endpoint | Parameters | Description |
 |---|---|---|
 | `/movies/query` | `title` (required), `language`, `year` | Query a single movie by title |
-| `/movies/search` | `query` (required), `language`, `year`, `page` | Search movies |
+| `/movies/search` | `query` (required), `language`, `year`, `page`, `details` | Search movies. `details=false` skips the per-result details request (`director` and `runtime` are `null`) |
 | `/movies/:id` | `:id` (path), `language` | Get a movie by TMDB ID |
 
 ### MTG Cards
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/mtg/cards` | `name` (required), `set`, `number` | Search Magic: The Gathering cards |
+| `/mtg/cards` | `name` (required), `set`, `number` | Search Magic: The Gathering cards (empty array when nothing matches) |
 
 ### Music
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/music/artists` | `name` (required), `page`, `per_page` | Search artists on Discogs |
-| `/music/albums` | `title` (required), `artist`, `year`, `genre`, `page`, `per_page` | Search albums |
-| `/music/tracks` | `track` (required), `artist`, `year`, `genre`, `page`, `per_page` | Search tracks |
+| `/music/artists` | `name` (required), `page`, `per_page` (max 100) | Search artists on Discogs |
+| `/music/albums` | `title` (required), `artist`, `year`, `genre`, `page`, `per_page` (max 100) | Search albums |
+| `/music/tracks` | `track` (required), `artist`, `year`, `genre`, `page`, `per_page` (max 100) | Search tracks |
 
 ### Pokémon TCG
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/pkm/cards` | `name` (required), `set` | Search Pokémon TCG cards |
+| `/pkm/cards` | `name` (required), `set`, `limit` (default 20, max 40), `page` | Search Pokémon TCG cards |
 
 ### Repos
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/repos/search` | `query` (required), `language`, `sort`, `order`, `page`, `per_page` | Search GitHub repositories |
-| `/repos/query` | `name` (required) | Query a single repo by name |
+| `/repos/search` | `query` (required), `language`, `sort` (`stars` default, `best-match`, `forks`, `help-wanted-issues`, `updated`), `order` (`asc`, `desc`), `page`, `per_page` (max 100) | Search GitHub repositories |
+| `/repos/query` | `name` (required) | Get a repo by `owner/repo`, or the best search match for a bare name |
 
 ### TV Shows
 
 | Endpoint | Parameters | Description |
 |---|---|---|
 | `/shows/query` | `title` (required), `language`, `year` | Query a single TV show by title |
-| `/shows/search` | `query` (required), `language`, `year`, `page` | Search TV shows |
+| `/shows/search` | `query` (required), `language`, `year`, `page`, `details` | Search TV shows. `details=false` skips the per-result details request |
 | `/shows/:id` | `:id` (path), `language` | Get a TV show by TMDB ID |
 
 ### YouTube
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/yt/video` | `url` (required) | Get video details by YouTube URL or video ID |
+| `/yt/video` | `url` (required) | Get video details by YouTube URL (`youtu.be`, `watch`, `shorts`, `embed`, `live`) or video ID |
 
 ### Example
 
