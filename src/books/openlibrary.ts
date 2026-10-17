@@ -40,12 +40,8 @@ const buildCoverUrlFromId = (
 const extractFirstRecord = (
   response: OpenLibraryReadResponse,
 ): OpenLibraryRecord | null => {
-  const recordKeys = Object.keys(response.records);
-  const firstKey = recordKeys[0];
-  if (!firstKey) {
-    return null;
-  }
-  return response.records[firstKey] ?? null;
+  // Unknown identifiers return an empty object/array instead of `records`
+  return Object.values(response.records ?? {})[0] ?? null;
 };
 
 /**

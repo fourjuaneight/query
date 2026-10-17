@@ -102,7 +102,7 @@ export interface OpenLibraryItem {
 }
 
 export interface OpenLibraryReadResponse {
-  records: Record<string, OpenLibraryRecord>;
+  records?: Record<string, OpenLibraryRecord>;
   items: OpenLibraryItem[];
 }
 
