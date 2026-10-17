@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -87,7 +89,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/search?title=Naruto');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data[0]!.title).toBe('Naruto');
       expect(body.data[0]!.author).toBe('Masashi Kishimoto');
@@ -113,7 +115,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/search?title=Naruto');
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -148,7 +150,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/search?title=NoCover');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data[0]!.cover).toBeNull();
     });
 
@@ -177,7 +179,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/search?title=Naruto');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data[0]!.title).toBe('ナルト');
     });
   });
@@ -195,7 +197,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/abc-123');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Naruto');
       expect(body.data.author).toBe('Masashi Kishimoto');
@@ -210,7 +212,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/abc-123');
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -238,7 +240,7 @@ describe('Manga handlers', () => {
       const res = await app.request('/manga/abc-123');
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -76,7 +78,7 @@ describe('Movies handlers', () => {
       const res = await app.request('/movies/query?title=Fight+Club', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Fight Club');
       expect(body.data.director).toBe('David Fincher');
@@ -121,7 +123,7 @@ describe('Movies handlers', () => {
       const res = await app.request('/movies/query?title=Fight+Club', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
@@ -135,7 +137,7 @@ describe('Movies handlers', () => {
       const res = await app.request('/movies/550', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Fight Club');
     });
@@ -172,7 +174,7 @@ describe('Movies handlers', () => {
       const res = await app.request('/movies/search?query=fight+club', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.results).toHaveLength(1);
       expect(body.data.results[0]!.title).toBe('Fight Club');
@@ -224,7 +226,7 @@ describe('Movies handlers', () => {
       const res = await app.request('/movies/query?title=Fight+Club', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.director).toBeNull();
     });
 
@@ -238,7 +240,7 @@ describe('Movies handlers', () => {
       const res = await app.request('/movies/550', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.posterUrl).toBeNull();
     });
   });

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -68,7 +70,7 @@ describe('PKM handler', () => {
       const res = await app.request('/pkm/cards?name=Charizard');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data[0]!.name).toBe('Charizard');
       expect(body.data[0]!.category).toBe('Pokemon');
@@ -98,7 +100,7 @@ describe('PKM handler', () => {
       const res = await app.request('/pkm/cards?name=nonexistent');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data).toEqual([]);
     });
@@ -111,7 +113,7 @@ describe('PKM handler', () => {
       const res = await app.request('/pkm/cards?name=Charizard');
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -153,7 +155,7 @@ describe('PKM handler', () => {
       const res = await app.request('/pkm/cards?name=Energy');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data[0]!.hp).toBeNull();
       expect(body.data[0]!.types).toBeNull();
       expect(body.data[0]!.stage).toBeNull();
@@ -184,7 +186,7 @@ describe('PKM handler', () => {
       const res = await app.request('/pkm/cards?name=Charizard');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data[0]!.description).toBe(
         'This card does something special.',
       );

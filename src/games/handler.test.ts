@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -96,7 +98,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/search?query=witcher', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data[0]!.title).toBe('The Witcher 3: Wild Hunt');
       expect(body.data[0]!.developers).toEqual(['CD Projekt Red']);
@@ -122,7 +124,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/search?query=witcher', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
@@ -134,7 +136,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/query?title=witcher', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('The Witcher 3: Wild Hunt');
     });
@@ -145,7 +147,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/query?title=nonexistent', {}, env);
       expect(res.status).toBe(404);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
       expect(body.error).toContain('No game found');
     });
@@ -163,7 +165,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/abc');
       expect(res.status).toBe(400);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.error).toContain('Invalid');
     });
 
@@ -173,7 +175,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/1942', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('The Witcher 3: Wild Hunt');
     });
@@ -184,7 +186,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/99999', {}, env);
       expect(res.status).toBe(404);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
       expect(body.error).toContain('No game found');
     });
@@ -205,7 +207,7 @@ describe('Games handlers', () => {
       const res = await app.request('/games/search?query=minimal', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data[0]!.title).toBe('Minimal Game');
       expect(body.data[0]!.summary).toBeNull();
       expect(body.data[0]!.releaseDate).toBeNull();

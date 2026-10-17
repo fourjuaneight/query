@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from './test-types';
+import type { Bindings } from './typings';
+
 import {
   buildPosterUrl,
   tmdbFetch,
@@ -93,14 +96,14 @@ describe('tmdbFetch', () => {
 describe('jsonSuccess', () => {
   it('returns { success: true, data } with status 200', async () => {
     const { Hono } = await import('hono');
-    const app = new Hono();
+    const app = new Hono<{ Bindings: Bindings }>();
 
     app.get('/test', ctx => jsonSuccess(ctx, { hello: 'world' }));
 
     const res = await app.request('/test');
     expect(res.status).toBe(200);
 
-    const body = await res.json();
+    const body = await res.json<ApiBody>();
     expect(body).toEqual({ success: true, data: { hello: 'world' } });
   });
 });
@@ -108,20 +111,20 @@ describe('jsonSuccess', () => {
 describe('jsonError', () => {
   it('returns { success: false, error } with default 400 status', async () => {
     const { Hono } = await import('hono');
-    const app = new Hono();
+    const app = new Hono<{ Bindings: Bindings }>();
 
     app.get('/test', ctx => jsonError(ctx, 'bad request'));
 
     const res = await app.request('/test');
     expect(res.status).toBe(400);
 
-    const body = await res.json();
+    const body = await res.json<ApiBody>();
     expect(body).toEqual({ success: false, error: 'bad request' });
   });
 
   it('returns custom status code', async () => {
     const { Hono } = await import('hono');
-    const app = new Hono();
+    const app = new Hono<{ Bindings: Bindings }>();
 
     app.get('/test', ctx => jsonError(ctx, 'not found', 404));
 

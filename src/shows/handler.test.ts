@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -68,7 +70,7 @@ describe('Shows handlers', () => {
       const res = await app.request('/shows/query?title=Breaking+Bad', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Breaking Bad');
       expect(body.data.creators).toEqual(['Vince Gilligan']);
@@ -114,7 +116,7 @@ describe('Shows handlers', () => {
       const res = await app.request('/shows/query?title=Breaking+Bad', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
@@ -128,7 +130,7 @@ describe('Shows handlers', () => {
       const res = await app.request('/shows/1396', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Breaking Bad');
     });
@@ -169,7 +171,7 @@ describe('Shows handlers', () => {
       );
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.results).toHaveLength(1);
       expect(body.data.results[0]!.title).toBe('Breaking Bad');
@@ -218,7 +220,7 @@ describe('Shows handlers', () => {
       const res = await app.request('/shows/1396', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.posterUrl).toBeNull();
     });
   });

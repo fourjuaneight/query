@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -56,7 +58,7 @@ describe('Music handlers', () => {
       const res = await app.request('/music/artists?name=Radiohead', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.results[0]!.title).toBe('Radiohead');
     });
@@ -84,7 +86,7 @@ describe('Music handlers', () => {
       const res = await app.request('/music/artists?name=Radiohead', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
@@ -118,7 +120,7 @@ describe('Music handlers', () => {
       const res = await app.request('/music/albums?title=OK+Computer', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.results[0]!.artist).toBe('Radiohead');
     });
@@ -146,7 +148,7 @@ describe('Music handlers', () => {
       const res = await app.request('/music/albums?title=OK+Computer', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
@@ -180,7 +182,7 @@ describe('Music handlers', () => {
       );
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.results[0]!.artist).toBe('Radiohead');
       expect(body.data.results[0]!.album).toBe('Paranoid Android');
@@ -213,7 +215,7 @@ describe('Music handlers', () => {
       );
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
