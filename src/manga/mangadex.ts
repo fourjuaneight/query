@@ -1,5 +1,4 @@
 import type {
-  AuthorResponse,
   MangaData,
   MangaResponse,
   MangaSearchResponse,
@@ -37,19 +36,6 @@ const extractRelationships = (
 };
 
 /**
- * Fetch manga author name by ID
- * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Author/operation/get-author-id
- */
-const getMangaAuthor = async (id: string): Promise<string> => {
-  const response = await upstreamFetch<AuthorResponse>(
-    'MangaDex',
-    `${API}/author/${id}`,
-  );
-
-  return response.data.attributes.name;
-};
-
-/**
  * Fetch detailed manga information by ID
  * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Manga/operation/get-manga-id
  *
@@ -57,28 +43,24 @@ const getMangaAuthor = async (id: string): Promise<string> => {
  * @returns Detailed manga data including title, description, author, and cover
  */
 export const getMangaDetails = async (id: string): Promise<MangaDetails> => {
-  const {
-    data: { attributes, relationships },
-  } = await upstreamFetch<MangaResponse>(
+  const params = new URLSearchParams();
+  params.append('includes[]', 'cover_art');
+  params.append('includes[]', 'author');
+
+  const { data } = await upstreamFetch<MangaResponse>(
     'MangaDex',
-    `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
+    `${API}/manga/${encodeURIComponent(id)}?${params.toString()}`,
   );
-  const coverFile = relationships?.find(rel => rel.type === 'cover_art')
-    ?.attributes?.fileName;
-  const firstRelationship = relationships?.[0];
-  if (!firstRelationship) {
-    throw new Error('[getMangaDetails]: No relationships found for manga');
-  }
-  const author = await getMangaAuthor(firstRelationship.id);
+  const { author, cover } = extractRelationships(data);
 
   return {
-    title: attributes.title.en,
-    description: attributes.description.en,
+    title: pickTitle(data.attributes.title),
+    description: data.attributes.description.en ?? '',
     author,
-    year: attributes.year,
-    status: attributes.status,
-    cover: `${ASSETS}/covers/${id}/${coverFile}`,
-    url: `https://mangadex.org/title/${id}`,
+    year: data.attributes.year,
+    status: data.attributes.status,
+    cover,
+    url: `https://mangadex.org/title/${data.id}`,
   };
 };
 

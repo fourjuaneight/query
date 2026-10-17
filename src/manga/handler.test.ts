@@ -43,11 +43,13 @@ const mangaSearchResponse = {
   total: 1,
 };
 
+const MANGA_ID = 'a1c7c817-4e59-43b7-9365-09675a149a6f';
+
 const mangaDetailResponse = {
   result: 'ok',
   response: 'entity',
   data: {
-    id: 'abc-123',
+    id: MANGA_ID,
     type: 'manga',
     attributes: {
       title: { en: 'Naruto' },
@@ -59,6 +61,7 @@ const mangaDetailResponse = {
       {
         id: 'author-1',
         type: 'author',
+        attributes: { name: 'Masashi Kishimoto' },
       },
       {
         id: 'cover-1',
@@ -66,16 +69,6 @@ const mangaDetailResponse = {
         attributes: { fileName: 'cover.jpg' },
       },
     ],
-  },
-};
-
-const authorResponse = {
-  result: 'ok',
-  response: 'entity',
-  data: {
-    id: 'author-1',
-    type: 'author',
-    attributes: { name: 'Masashi Kishimoto' },
   },
 };
 
@@ -185,23 +178,45 @@ describe('Manga handlers', () => {
   });
 
   describe('GET /manga/:id', () => {
-    it('returns manga details', async () => {
-      mockFetch
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify(mangaDetailResponse), { status: 200 }),
-        )
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify(authorResponse), { status: 200 }),
-        );
+    it('returns manga details from a single request', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mangaDetailResponse), { status: 200 }),
+      );
 
-      const res = await app.request('/manga/abc-123');
+      const res = await app.request(`/manga/${MANGA_ID}`);
       expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      const calledUrl = new URL(mockFetch.mock.calls[0]![0] as string);
+      expect(calledUrl.pathname).toBe(`/manga/${MANGA_ID}`);
+      expect(calledUrl.searchParams.getAll('includes[]')).toEqual([
+        'cover_art',
+        'author',
+      ]);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Naruto');
       expect(body.data.author).toBe('Masashi Kishimoto');
-      expect(body.data.url).toContain('abc-123');
+      expect(body.data.cover).toBe(
+        `https://uploads.mangadex.org/covers/${MANGA_ID}/cover.jpg`,
+      );
+      expect(body.data.url).toBe(`https://mangadex.org/title/${MANGA_ID}`);
+    });
+
+    it('returns 400 for a non-UUID ID', async () => {
+      const res = await app.request('/manga/abc-123');
+      expect(res.status).toBe(400);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 when MangaDex has no such manga', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('{}', { status: 404, statusText: 'Not Found' }),
+      );
+
+      const res = await app.request(`/manga/${MANGA_ID}`);
+      expect(res.status).toBe(404);
     });
 
     it('returns 502 when API call fails', async () => {
@@ -209,39 +224,30 @@ describe('Manga handlers', () => {
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
-      const res = await app.request('/manga/abc-123');
+      const res = await app.request(`/manga/${MANGA_ID}`);
       expect(res.status).toBe(502);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
+      expect(body.error).toBe('MangaDex: upstream request failed');
     });
 
-    it('returns 500 when manga has no relationships', async () => {
+    it('returns null cover and empty author when relationships are missing', async () => {
       const noRel = {
-        result: 'ok',
-        response: 'entity',
-        data: {
-          id: 'abc-123',
-          type: 'manga',
-          attributes: {
-            title: { en: 'Naruto' },
-            description: { en: 'A ninja story' },
-            status: 'completed',
-            year: 1999,
-          },
-          relationships: [],
-        },
+        ...mangaDetailResponse,
+        data: { ...mangaDetailResponse.data, relationships: [] },
       };
 
       mockFetch.mockResolvedValueOnce(
         new Response(JSON.stringify(noRel), { status: 200 }),
       );
 
-      const res = await app.request('/manga/abc-123');
-      expect(res.status).toBe(500);
+      const res = await app.request(`/manga/${MANGA_ID}`);
+      expect(res.status).toBe(200);
 
       const body = await res.json<ApiBody>();
-      expect(body.success).toBe(false);
+      expect(body.data.author).toBe('');
+      expect(body.data.cover).toBeNull();
     });
   });
 });
