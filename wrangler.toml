@@ -14,14 +14,8 @@ name = "RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 60, period = 60 }
 
-# MCP OAuth: public origin of this Worker, used as the OAuth resource identifier.
-# Set it to your deployed URL (workers.dev or custom domain).
-[vars]
-PUBLIC_URL = "https://query.example.workers.dev"
-
-# MCP OAuth: storage for clients, grants and tokens.
-# Create it with `pnpm exec wrangler kv namespace create OAUTH_KV` and paste the ID here.
-# DOCS: https://github.com/cloudflare/workers-oauth-provider
+# MCP OAuth: storage for clients, grants and tokens. There is no `id` on purpose:
+# `wrangler deploy` creates the namespace on the first deploy (the API token needs
+# Workers KV Storage: Edit) and reuses it after that. Add an `id` to pin one.
 [[kv_namespaces]]
 binding = "OAUTH_KV"
-id = "REPLACE_WITH_OAUTH_KV_ID"

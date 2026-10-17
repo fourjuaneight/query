@@ -8,12 +8,10 @@ export interface Bindings {
   DISCOGS_TOKEN: string;
   GH_TOKEN: string;
   YOUTUBE_KEY: string;
-  /** Optional shared secret. When set, requests must send `Authorization: Bearer <API_KEY>`. */
+  /** Optional shared secret. When set, REST requests must send `Authorization: Bearer <API_KEY>`. It is also the MCP sign-in password; without it, MCP is off. */
   API_KEY?: string;
   /** Optional Workers Rate Limiting binding (see wrangler.toml). */
   RATE_LIMITER?: RateLimit;
-  /** Public origin of the Worker (e.g. https://query.example.com). Used as the MCP OAuth resource. */
-  PUBLIC_URL?: string;
   /** KV namespace for OAuth clients, grants and tokens (MCP only). */
   OAUTH_KV?: KVNamespace;
   /** OAuth helpers, injected by OAuthProvider for the /authorize page (absent under Node). */

@@ -14,7 +14,7 @@ import { searchAlbum, searchArtist, searchTrack } from './discogs';
 
 const pagination = {
   page: page(),
-  perPage: int('Results per page', { max: 100 }),
+  perPage: int('Results per page (default 10)', { max: 100 }),
 };
 
 const filters = {

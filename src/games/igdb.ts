@@ -148,6 +148,7 @@ const normalizeGameData = (game: IGDBGameSearchResult): GameData => {
       .map(ic => ic.company.name) ?? [];
 
   return {
+    id: game.id,
     title: game.name,
     summary: game.summary ?? null,
     releaseDate: formatReleaseDate(game.first_release_date),

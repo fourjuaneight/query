@@ -10,7 +10,7 @@ export const registerMTGTools = (server: McpServer): void => {
     {
       title: 'Get Magic: The Gathering card',
       description:
-        'Find Magic: The Gathering cards on Scryfall by name, optionally narrowed by set and collector number. Returns a list of matching card printings.',
+        'Find Magic: The Gathering cards on Scryfall by name. Returns matching cards with one printing each; pass set and number for a specific printing.',
       inputSchema: z.object({
         name: text('Card name'),
         set: optionalText('Set code (e.g. "neo")'),
