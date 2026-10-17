@@ -98,6 +98,8 @@ export interface TCGdexCard {
 export interface RequestQuery {
   name: string;
   set?: string;
+  limit?: number;
+  page?: number;
 }
 
 export interface PKMItem {

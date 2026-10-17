@@ -192,4 +192,62 @@ describe('PKM handler', () => {
       );
     });
   });
+
+  describe('pagination', () => {
+    const manyBriefs = Array.from({ length: 100 }, (_, i) => ({
+      id: `card-${i}`,
+      localId: String(i),
+      name: 'Pikachu',
+    }));
+
+    const mockSearch = (): void => {
+      mockFetch.mockImplementation((url: string) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(
+              new URL(url).pathname.endsWith('/cards')
+                ? manyBriefs
+                : cardDetails,
+            ),
+            { status: 200 },
+          ),
+        ),
+      );
+    };
+
+    it('fetches details for at most 20 cards by default', async () => {
+      mockSearch();
+
+      const res = await app.request('/pkm/cards?name=Pikachu');
+      expect(res.status).toBe(200);
+
+      const body = await res.json<ApiBody>();
+      expect(body.data).toHaveLength(20);
+      expect(mockFetch).toHaveBeenCalledTimes(21);
+    });
+
+    it('applies limit and page', async () => {
+      mockSearch();
+
+      const res = await app.request('/pkm/cards?name=Pikachu&limit=5&page=3');
+      expect(res.status).toBe(200);
+
+      const detailUrls = mockFetch.mock.calls
+        .slice(1)
+        .map(([url]) => new URL(url as string).pathname.split('/').pop());
+      expect(detailUrls).toEqual([
+        'card-10',
+        'card-11',
+        'card-12',
+        'card-13',
+        'card-14',
+      ]);
+    });
+
+    it('rejects a limit above 40', async () => {
+      const res = await app.request('/pkm/cards?name=Pikachu&limit=41');
+      expect(res.status).toBe(400);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
 });
