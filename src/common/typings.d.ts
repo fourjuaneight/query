@@ -8,6 +8,8 @@ export interface Bindings {
   YOUTUBE_KEY: string;
   /** Optional shared secret. When set, requests must send `Authorization: Bearer <API_KEY>`. */
   API_KEY?: string;
+  /** Optional Workers Rate Limiting binding (see wrangler.toml). */
+  RATE_LIMITER?: RateLimit;
 }
 
 export interface AppEnv {
