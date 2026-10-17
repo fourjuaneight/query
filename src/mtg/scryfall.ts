@@ -5,7 +5,7 @@ import type {
   ScryfallError,
   ScryfallSearch,
 } from './typings.d';
-import { parseJSON } from '../common/helpers';
+import { upstreamFetch } from '../common/helpers';
 
 const magicColors: Record<string, string> = {
   W: 'White',
@@ -35,110 +35,80 @@ const isScryfallError = (
 export const getMTGCard = async (
   queryTerm: RequestQuery,
 ): Promise<MTGItem[]> => {
-  try {
-    const encodedName = encodeURIComponent(queryTerm.name);
+  const encodedName = encodeURIComponent(queryTerm.name);
 
-    // Build query string with optional set and number filters
-    let query = encodedName;
-    if (queryTerm.set) {
-      query += `+s:${queryTerm.set}`;
-    }
-    if (queryTerm.number) {
-      query += `+cn:${queryTerm.number}`;
-    }
-
-    let request: Response;
-    try {
-      request = await fetch(
-        `https://api.scryfall.com/cards/search?order=set&q=${query}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-    } catch (networkError) {
-      throw new Error(
-        `[getMTGCard]: Network error searching for "${queryTerm.name}" - ${String(networkError)}`,
-      );
-    }
-
-    if (request.status !== 200) {
-      throw new Error(
-        `(fetch): ${request.status} - ${request.statusText} | ${queryTerm.set}/${queryTerm.number}`,
-      );
-    }
-
-    const response = await parseJSON<ScryfallSearch | ScryfallError>(request);
-
-    if (isScryfallError(response)) {
-      const errMsg = response.warnings
-        ? response.warnings.join(' - ')
-        : response.details;
-
-      throw new Error(`(request): ${errMsg}`);
-    }
-
-    const cards = response.data.map(
-      ({
-        artist,
-        card_faces,
-        collector_number,
-        colors,
-        flavor_text,
-        image_uris,
-        name,
-        oracle_text,
-        rarity,
-        released_at,
-        set_name,
-        set,
-        type_line,
-      }) => {
-        const oText = oracle_text
-          ? escapeText(oracle_text)
-          : card_faces?.[0]?.oracle_text
-            ? escapeText(card_faces?.[0]?.oracle_text)
-            : null;
-        const fText = flavor_text
-          ? escapeText(flavor_text)
-          : card_faces?.[0]?.flavor_text
-            ? escapeText(card_faces?.[0]?.flavor_text)
-            : null;
-        const item: MTGItem = {
-          name,
-          colors:
-            colors?.length !== 0
-              ? (colors
-                  ?.map(color => magicColors[color])
-                  .filter((c): c is string => c !== undefined) ?? null)
-              : null,
-          type: type_line,
-          set: set.toUpperCase(),
-          set_name,
-          oracle_text: oText,
-          flavor_text: fText,
-          rarity,
-          collector_number: parseInt(collector_number, 10),
-          artist,
-          released_at,
-          image: image_uris?.png ?? card_faces?.[0]?.image_uris?.png ?? '',
-          back: card_faces?.[1]?.image_uris?.png ?? null,
-        };
-
-        return item;
-      },
-    );
-
-    return cards;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[getMTGCard] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[getMTGCard] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
+  // Build query string with optional set and number filters
+  let query = encodedName;
+  if (queryTerm.set) {
+    query += `+s:${queryTerm.set}`;
   }
+  if (queryTerm.number) {
+    query += `+cn:${queryTerm.number}`;
+  }
+
+  const response = await upstreamFetch<ScryfallSearch | ScryfallError>(
+    'Scryfall',
+    `https://api.scryfall.com/cards/search?order=set&q=${query}`,
+  );
+
+  if (isScryfallError(response)) {
+    const errMsg = response.warnings
+      ? response.warnings.join(' - ')
+      : response.details;
+
+    throw new Error(`(request): ${errMsg}`);
+  }
+
+  const cards = response.data.map(
+    ({
+      artist,
+      card_faces,
+      collector_number,
+      colors,
+      flavor_text,
+      image_uris,
+      name,
+      oracle_text,
+      rarity,
+      released_at,
+      set_name,
+      set,
+      type_line,
+    }) => {
+      const oText = oracle_text
+        ? escapeText(oracle_text)
+        : card_faces?.[0]?.oracle_text
+          ? escapeText(card_faces?.[0]?.oracle_text)
+          : null;
+      const fText = flavor_text
+        ? escapeText(flavor_text)
+        : card_faces?.[0]?.flavor_text
+          ? escapeText(card_faces?.[0]?.flavor_text)
+          : null;
+      const item: MTGItem = {
+        name,
+        colors:
+          colors?.length !== 0
+            ? (colors
+                ?.map(color => magicColors[color])
+                .filter((c): c is string => c !== undefined) ?? null)
+            : null,
+        type: type_line,
+        set: set.toUpperCase(),
+        set_name,
+        oracle_text: oText,
+        flavor_text: fText,
+        rarity,
+        collector_number: parseInt(collector_number, 10),
+        artist,
+        released_at,
+        image: image_uris?.png ?? card_faces?.[0]?.image_uris?.png ?? '',
+        back: card_faces?.[1]?.image_uris?.png ?? null,
+      };
+
+      return item;
+    },
+  );
+
+  return cards;
 };
