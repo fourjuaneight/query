@@ -36,6 +36,9 @@ jobs:
       - name: Lint
         run: pnpm eslint "src/**/*.ts"
 
+      - name: Typecheck
+        run: pnpm typecheck
+
       - name: Run tests
         run: pnpm test
 
