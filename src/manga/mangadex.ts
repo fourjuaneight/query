@@ -1,52 +1,52 @@
 import type {
   AuthorResponse,
+  MangaData,
   MangaResponse,
   MangaSearchResponse,
   MangaSearchResult,
   MangaSearchOptions,
   MangaDetails,
 } from './typings';
-import { parseJSON } from '../common/helpers';
+import { upstreamFetch } from '../common/helpers';
 
 const API = 'https://api.mangadex.org';
 const ASSETS = 'https://uploads.mangadex.org';
+
+/**
+ * Pick the English title, falling back to the first available language
+ */
+const pickTitle = (title: MangaData['attributes']['title']): string =>
+  title.en ?? Object.values(title).find(Boolean) ?? '';
+
+/**
+ * Extract the author name and cover URL from expanded relationships
+ */
+const extractRelationships = (
+  manga: MangaData,
+): { author: string; cover: string | null } => {
+  const coverFile = manga.relationships?.find(rel => rel.type === 'cover_art')
+    ?.attributes?.fileName;
+  const author =
+    manga.relationships?.find(rel => rel.type === 'author')?.attributes?.name ??
+    '';
+
+  return {
+    author,
+    cover: coverFile ? `${ASSETS}/covers/${manga.id}/${coverFile}` : null,
+  };
+};
 
 /**
  * Fetch manga author name by ID
  * DOCS: https://api.mangadex.org/docs/redoc.html#tag/Author/operation/get-author-id
  */
 const getMangaAuthor = async (id: string): Promise<string> => {
-  try {
-    let request: Response;
-    try {
-      request = await fetch(`${API}/author/${id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (networkError) {
-      throw new Error(
-        `(getMangaAuthor): Network error fetching author ${id} - ${String(networkError)}`,
-      );
-    }
+  const response = await upstreamFetch<AuthorResponse>(
+    'MangaDex',
+    `${API}/author/${id}`,
+  );
 
-    if (request.status !== 200) {
-      const errorResp = await request.text();
-
-      throw new Error(
-        `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`,
-      );
-    }
-
-    const response = await parseJSON<AuthorResponse>(request);
-
-    return response.data.attributes.name;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(`(getMangaAuthor): ${String(error)}`);
-  }
+  return response.data.attributes.name;
 };
 
 /**
@@ -57,61 +57,29 @@ const getMangaAuthor = async (id: string): Promise<string> => {
  * @returns Detailed manga data including title, description, author, and cover
  */
 export const getMangaDetails = async (id: string): Promise<MangaDetails> => {
-  try {
-    let request: Response;
-    try {
-      request = await fetch(
-        `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-    } catch (networkError) {
-      throw new Error(
-        `[getMangaDetails]: Network error fetching manga ${id} - ${String(networkError)}`,
-      );
-    }
-
-    if (request.status !== 200) {
-      const errorResp = await request.text();
-
-      throw new Error(
-        `(fetch): ${request.status} - ${request.statusText} (${id}) - ${errorResp}`,
-      );
-    }
-
-    const response = await parseJSON<MangaResponse>(request);
-    const {
-      data: { attributes, relationships },
-    } = response;
-    const coverFile = relationships?.find(rel => rel.type === 'cover_art')
-      ?.attributes?.fileName;
-    const firstRelationship = relationships?.[0];
-    if (!firstRelationship) {
-      throw new Error('[getMangaDetails]: No relationships found for manga');
-    }
-    const author = await getMangaAuthor(firstRelationship.id);
-
-    return {
-      title: attributes.title.en,
-      description: attributes.description.en,
-      author,
-      year: attributes.year,
-      status: attributes.status,
-      cover: `${ASSETS}/covers/${id}/${coverFile}`,
-      url: `https://mangadex.org/title/${id}`,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[getMangaDetails] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[getMangaDetails] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
+  const {
+    data: { attributes, relationships },
+  } = await upstreamFetch<MangaResponse>(
+    'MangaDex',
+    `${API}/manga/${id}?limit=100&includes%5B%5D=cover_art&includes%5B%5D=scanlation_group&order%5Bvolume%5D=desc&order%5Bchapter%5D=desc&offset=0&contentRating%5B%5D=safe&contentRating%5B%5D=suggestive&contentRating%5B%5D=erotica&contentRating%5B%5D=pornographic&translatedLanguage%5B%5D=en`,
+  );
+  const coverFile = relationships?.find(rel => rel.type === 'cover_art')
+    ?.attributes?.fileName;
+  const firstRelationship = relationships?.[0];
+  if (!firstRelationship) {
+    throw new Error('[getMangaDetails]: No relationships found for manga');
   }
+  const author = await getMangaAuthor(firstRelationship.id);
+
+  return {
+    title: attributes.title.en,
+    description: attributes.description.en,
+    author,
+    year: attributes.year,
+    status: attributes.status,
+    cover: `${ASSETS}/covers/${id}/${coverFile}`,
+    url: `https://mangadex.org/title/${id}`,
+  };
 };
 
 /**
@@ -126,104 +94,48 @@ export const searchManga = async (
   title: string,
   options: MangaSearchOptions = {},
 ): Promise<MangaSearchResult[]> => {
-  try {
-    const params = new URLSearchParams();
-    params.set('title', title);
-    params.set('limit', String(options.limit ?? 10));
-    params.set('offset', String(options.offset ?? 0));
+  const params = new URLSearchParams();
+  params.set('title', title);
+  params.set('limit', String(options.limit ?? 10));
+  params.set('offset', String(options.offset ?? 0));
 
-    // Include cover_art and author in relationships
-    params.append('includes[]', 'cover_art');
-    params.append('includes[]', 'author');
+  // Include cover_art and author in relationships
+  params.append('includes[]', 'cover_art');
+  params.append('includes[]', 'author');
 
-    // Content rating filter (default to safe and suggestive)
-    const contentRatings = options.contentRating ?? ['safe', 'suggestive'];
-    for (const rating of contentRatings) {
-      params.append('contentRating[]', rating);
-    }
-
-    // Status filter
-    if (options.status) {
-      for (const status of options.status) {
-        params.append('status[]', status);
-      }
-    }
-
-    // Publication demographic filter
-    if (options.publicationDemographic) {
-      for (const demographic of options.publicationDemographic) {
-        params.append('publicationDemographic[]', demographic);
-      }
-    }
-
-    // Tag filters
-    if (options.includedTags) {
-      for (const tag of options.includedTags) {
-        params.append('includedTags[]', tag);
-      }
-    }
-
-    if (options.excludedTags) {
-      for (const tag of options.excludedTags) {
-        params.append('excludedTags[]', tag);
-      }
-    }
-
-    // Order/sorting
-    if (options.order) {
-      for (const [key, value] of Object.entries(options.order)) {
-        params.set(`order[${key}]`, value);
-      }
-    }
-
-    let request: Response;
-    try {
-      request = await fetch(`${API}/manga?${params.toString()}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (networkError) {
-      throw new Error(
-        `[searchManga]: Network error searching for "${title}" - ${String(networkError)}`,
-      );
-    }
-
-    if (request.status !== 200) {
-      const errorResp = await request.text();
-
-      throw new Error(
-        `(fetch): ${request.status} - ${request.statusText} (${title}) - ${errorResp}`,
-      );
-    }
-
-    const response = await parseJSON<MangaSearchResponse>(request);
-
-    return response.data.map(manga => {
-      const coverFile = manga.relationships?.find(
-        rel => rel.type === 'cover_art',
-      )?.attributes?.fileName;
-      const author =
-        manga.relationships?.find(rel => rel.type === 'author')?.attributes
-          ?.name ?? '';
-
-      return {
-        title:
-          manga.attributes.title.en ?? Object.values(manga.attributes.title)[0],
-        description: manga.attributes.description?.en ?? '',
-        author,
-        year: manga.attributes.year,
-        status: manga.attributes.status,
-        cover: coverFile ? `${ASSETS}/covers/${manga.id}/${coverFile}` : null,
-      };
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[searchManga] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[searchManga] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
+  // Content rating filter (default to safe and suggestive)
+  const contentRatings = options.contentRating ?? ['safe', 'suggestive'];
+  for (const rating of contentRatings) {
+    params.append('contentRating[]', rating);
   }
+
+  const arrayFilters = {
+    'status[]': options.status,
+    'publicationDemographic[]': options.publicationDemographic,
+    'includedTags[]': options.includedTags,
+    'excludedTags[]': options.excludedTags,
+  };
+  for (const [key, values] of Object.entries(arrayFilters)) {
+    for (const value of values ?? []) {
+      params.append(key, value);
+    }
+  }
+
+  // Order/sorting
+  for (const [key, value] of Object.entries(options.order ?? {})) {
+    params.set(`order[${key}]`, value);
+  }
+
+  const response = await upstreamFetch<MangaSearchResponse>(
+    'MangaDex',
+    `${API}/manga?${params.toString()}`,
+  );
+
+  return response.data.map(manga => ({
+    title: pickTitle(manga.attributes.title),
+    description: manga.attributes.description?.en ?? '',
+    ...extractRelationships(manga),
+    year: manga.attributes.year,
+    status: manga.attributes.status,
+  }));
 };
