@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -72,7 +74,7 @@ describe('YouTube handler', () => {
       );
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Rick Astley - Never Gonna Give You Up');
       expect(body.data.creator).toBe('Rick Astley');
@@ -91,7 +93,7 @@ describe('YouTube handler', () => {
       );
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('Rick Astley - Never Gonna Give You Up');
     });
@@ -117,7 +119,7 @@ describe('YouTube handler', () => {
       const res = await app.request('/yt/video?url=dQw4w9WgXcQ', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
     });
 
@@ -142,7 +144,7 @@ describe('YouTube handler', () => {
       );
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -188,7 +190,7 @@ describe('YouTube handler', () => {
       const res = await app.request('/yt/video?url=dQw4w9WgXcQ', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.thumbnailUrl).toBe('https://example.com/maxres.jpg');
     });
 
@@ -219,7 +221,7 @@ describe('YouTube handler', () => {
       const res = await app.request('/yt/video?url=dQw4w9WgXcQ', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.thumbnailUrl).toBe('https://example.com/default.jpg');
     });
   });

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
+import type { ApiBody } from './common/test-types';
+
 import app from './app';
 
 describe('App routing', () => {
@@ -47,7 +49,7 @@ describe('App routing', () => {
       const res = await app.request(path);
       expect(res.status).toBe(400);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
       expect(body.error).toContain(param);
     },
@@ -59,7 +61,7 @@ describe('App routing', () => {
     const res = await app.request('/games/abc');
     expect(res.status).toBe(400);
 
-    const body = await res.json();
+    const body = await res.json<ApiBody>();
     expect(body.success).toBe(false);
     expect(body.error).toContain('Invalid');
   });
@@ -68,7 +70,7 @@ describe('App routing', () => {
     const res = await app.request('/movies/abc');
     expect(res.status).toBe(400);
 
-    const body = await res.json();
+    const body = await res.json<ApiBody>();
     expect(body.success).toBe(false);
     expect(body.error).toContain('Invalid');
   });
@@ -77,7 +79,7 @@ describe('App routing', () => {
     const res = await app.request('/shows/abc');
     expect(res.status).toBe(400);
 
-    const body = await res.json();
+    const body = await res.json<ApiBody>();
     expect(body.success).toBe(false);
     expect(body.error).toContain('Invalid');
   });

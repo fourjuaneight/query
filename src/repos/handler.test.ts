@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -57,7 +59,7 @@ describe('Repos handlers', () => {
       const res = await app.request('/repos/search?query=linux', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.results[0]!.name).toBe('linux');
       expect(body.data.results[0]!.fullName).toBe('torvalds/linux');
@@ -85,7 +87,7 @@ describe('Repos handlers', () => {
       const res = await app.request('/repos/search?query=linux', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
   });
@@ -99,7 +101,7 @@ describe('Repos handlers', () => {
       const res = await app.request('/repos/query?name=linux', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.name).toBe('linux');
       expect(body.data.language).toBe('C');
@@ -126,7 +128,7 @@ describe('Repos handlers', () => {
       const res = await app.request('/repos/query?name=linux', {}, env);
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -150,7 +152,7 @@ describe('Repos handlers', () => {
       const res = await app.request('/repos/query?name=linux', {}, env);
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.description).toBeNull();
       expect(body.data.licenseName).toBeNull();
     });

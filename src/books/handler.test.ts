@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { ApiBody } from '../common/test-types';
+
 import app from '../app';
 
 const mockFetch = vi.fn();
@@ -77,7 +79,7 @@ describe('Books handlers', () => {
       const res = await app.request('/books/isbn?isbn=9780451524935');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data.title).toBe('1984');
       expect(body.data.authors).toEqual(['George Orwell']);
@@ -105,7 +107,7 @@ describe('Books handlers', () => {
       const res = await app.request('/books/isbn?isbn=9780451524935');
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -143,7 +145,7 @@ describe('Books handlers', () => {
       const res = await app.request('/books/isbn?isbn=0000000000');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data.title).toBe('Minimal Book');
       expect(body.data.subtitle).toBeNull();
       expect(body.data.authors).toEqual([]);
@@ -165,7 +167,7 @@ describe('Books handlers', () => {
       const res = await app.request('/books/search?title=1984');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(true);
       expect(body.data).toHaveLength(1);
       expect(body.data[0]!.title).toBe('1984');
@@ -192,7 +194,7 @@ describe('Books handlers', () => {
       const res = await app.request('/books/search?title=1984');
       expect(res.status).toBe(500);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
     });
 
@@ -214,7 +216,7 @@ describe('Books handlers', () => {
       const res = await app.request('/books/search?title=Minimal');
       expect(res.status).toBe(200);
 
-      const body = await res.json();
+      const body = await res.json<ApiBody>();
       expect(body.data[0]!.title).toBe('Minimal');
       expect(body.data[0]!.authors).toEqual([]);
       expect(body.data[0]!.coverUrl).toContain('12345');
