@@ -3,7 +3,7 @@ import type {
   IGDBQueryOptions,
   GameData,
 } from './typings';
-import { parseJSON } from '../common/helpers';
+import { upstreamFetch } from '../common/helpers';
 
 interface IGDBEnv {
   TWITCH_CLIENT_ID: string;
@@ -20,6 +20,10 @@ const IGDB_BASE_URL = 'https://api.igdb.com/v4';
 const IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload';
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 
+const GAME_FIELDS = `fields name,summary,cover.image_id,cover.url,genres.name,platforms.name,
+       involved_companies.company.name,involved_companies.developer,
+       involved_companies.publisher,first_release_date,rating;`;
+
 /** Cached OAuth token and its expiry time */
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 
@@ -34,28 +38,14 @@ const getAccessToken = async (env: IGDBEnv): Promise<string> => {
     return cachedToken.accessToken;
   }
 
-  let response: Response;
-  try {
-    const url = new URL(TWITCH_TOKEN_URL);
-    url.searchParams.set('client_id', env.TWITCH_CLIENT_ID);
-    url.searchParams.set('client_secret', env.TWITCH_CLIENT_SECRET);
-    url.searchParams.set('grant_type', 'client_credentials');
+  const url = new URL(TWITCH_TOKEN_URL);
+  url.searchParams.set('client_id', env.TWITCH_CLIENT_ID);
+  url.searchParams.set('client_secret', env.TWITCH_CLIENT_SECRET);
+  url.searchParams.set('grant_type', 'client_credentials');
 
-    response = await fetch(url.toString(), { method: 'POST' });
-  } catch (networkError) {
-    throw new Error(
-      `(getAccessToken): Network error fetching Twitch OAuth token - ${String(networkError)}`,
-    );
-  }
-
-  if (response.status !== 200) {
-    const errorResp = await response.text();
-    throw new Error(
-      `(getAccessToken): ${response.status} - ${response.statusText} - ${errorResp}`,
-    );
-  }
-
-  const data = await parseJSON<TwitchTokenResponse>(response);
+  const data = await upstreamFetch<TwitchTokenResponse>('Twitch', url, {
+    method: 'POST',
+  });
 
   // Cache with a 5-minute safety margin before actual expiry
   cachedToken = {
@@ -87,40 +77,17 @@ const igdbFetch = async <T>(
   endpoint: string,
   body: string,
 ): Promise<T> => {
-  try {
-    const accessToken = await getAccessToken(env);
+  const accessToken = await getAccessToken(env);
 
-    let response: Response;
-    try {
-      response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Client-ID': env.TWITCH_CLIENT_ID,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body,
-      });
-    } catch (networkError) {
-      throw new Error(
-        `(igdbFetch): Network error requesting ${endpoint} - ${String(networkError)}`,
-      );
-    }
-
-    if (response.status !== 200) {
-      const errorResp = await response.text();
-      throw new Error(
-        `(fetch): ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
-      );
-    }
-
-    return (await response.json()) as T;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(`(igdbFetch): ${String(error)}`);
-  }
+  return upstreamFetch<T>('IGDB', `${IGDB_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Client-ID': env.TWITCH_CLIENT_ID,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body,
+  });
 };
 
 /**
@@ -171,34 +138,16 @@ export const searchGames = async (
   query: string,
   options: IGDBQueryOptions = {},
 ): Promise<GameData[]> => {
-  try {
-    const limit = options.limit ?? 10;
+  const body = `
+    search "${query}";
+    ${GAME_FIELDS}
+    where version_parent = null;
+    limit ${options.limit ?? 10};
+  `.trim();
 
-    const body = `
-      search "${query}";
-      fields name,summary,cover.image_id,cover.url,genres.name,platforms.name,
-             involved_companies.company.name,involved_companies.developer,
-             involved_companies.publisher,first_release_date,rating;
-      where version_parent = null;
-      limit ${limit};
-    `.trim();
+  const results = await igdbFetch<IGDBGameSearchResult[]>(env, '/games', body);
 
-    const results = await igdbFetch<IGDBGameSearchResult[]>(
-      env,
-      '/games',
-      body,
-    );
-
-    return results.map(normalizeGameData);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[searchGames] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[searchGames] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  return results.map(normalizeGameData);
 };
 
 /**
@@ -211,26 +160,8 @@ export const queryGame = async (
   env: IGDBEnv,
   title: string,
 ): Promise<GameData | null> => {
-  try {
-    const results = await searchGames(env, title, { limit: 1 });
-
-    if (results.length === 0) {
-      return null;
-    }
-
-    const first = results[0];
-    if (!first) return null;
-
-    return first;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryGame] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryGame] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  const [first] = await searchGames(env, title, { limit: 1 });
+  return first ?? null;
 };
 
 /**
@@ -243,35 +174,11 @@ export const queryGameById = async (
   env: IGDBEnv,
   gameId: number,
 ): Promise<GameData | null> => {
-  try {
-    const body = `
-      fields name,summary,cover.image_id,cover.url,genres.name,platforms.name,
-             involved_companies.company.name,involved_companies.developer,
-             involved_companies.publisher,first_release_date,rating;
-      where id = ${gameId};
-    `.trim();
+  const body = `
+    ${GAME_FIELDS}
+    where id = ${gameId};
+  `.trim();
 
-    const results = await igdbFetch<IGDBGameSearchResult[]>(
-      env,
-      '/games',
-      body,
-    );
-
-    if (results.length === 0) {
-      return null;
-    }
-
-    const first = results[0];
-    if (!first) return null;
-
-    return normalizeGameData(first);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryGameById] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryGameById] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  const [first] = await igdbFetch<IGDBGameSearchResult[]>(env, '/games', body);
+  return first ? normalizeGameData(first) : null;
 };
