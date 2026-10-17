@@ -79,13 +79,13 @@ describe('Repos handlers', () => {
       expect(res.status).toBe(200);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       mockFetch.mockResolvedValueOnce(
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
       const res = await app.request('/repos/search?query=linux', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
@@ -120,13 +120,13 @@ describe('Repos handlers', () => {
       expect(res.status).toBe(404);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       mockFetch.mockResolvedValueOnce(
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
       const res = await app.request('/repos/query?name=linux', {}, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
@@ -156,5 +156,20 @@ describe('Repos handlers', () => {
       expect(body.data.description).toBeNull();
       expect(body.data.licenseName).toBeNull();
     });
+  });
+
+  describe('lookup and validation', () => {
+    it.each([['sort=popular'], ['order=up'], ['per_page=101'], ['page=abc']])(
+      'returns 400 for invalid %s',
+      async param => {
+        const res = await app.request(
+          `/repos/search?query=linux&${param}`,
+          {},
+          env,
+        );
+        expect(res.status).toBe(400);
+        expect(mockFetch).not.toHaveBeenCalled();
+      },
+    );
   });
 });
