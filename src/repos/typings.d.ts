@@ -54,7 +54,8 @@ export interface RepoSearchResponse {
 
 export interface GitHubQueryOptions {
   language?: string;
-  sort?: 'stars' | 'forks' | 'help-wanted-issues' | 'updated';
+  /** 'best-match' omits the sort param (GitHub's default relevance ranking) */
+  sort?: 'best-match' | 'stars' | 'forks' | 'help-wanted-issues' | 'updated';
   order?: 'asc' | 'desc';
   page?: number;
   perPage?: number;

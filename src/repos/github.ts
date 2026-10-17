@@ -5,7 +5,7 @@ import type {
   RepoData,
   RepoSearchResponse,
 } from './typings';
-import { buildUrl, upstreamFetch } from '../common/helpers';
+import { UpstreamError, buildUrl, upstreamFetch } from '../common/helpers';
 
 const GITHUB_API_URL = 'https://api.github.com';
 
@@ -61,6 +61,7 @@ export const searchRepos = async (
   const searchQuery = options.language
     ? `${query} language:${options.language}`
     : query;
+  const sort = options.sort ?? 'stars';
   const perPage = options.perPage ?? 10;
   const page = options.page ?? 1;
 
@@ -69,8 +70,7 @@ export const searchRepos = async (
     '/search/repositories',
     {
       ['q']: searchQuery,
-      sort: options.sort ?? 'stars',
-      order: options.order ?? 'desc',
+      ...(sort !== 'best-match' && { sort, order: options.order ?? 'desc' }),
       per_page: perPage,
       page,
     },
@@ -87,15 +87,37 @@ export const searchRepos = async (
 };
 
 /**
- * Search for a repository by name and return the first (most relevant) result
+ * Get a repository by name.
+ * "owner/repo" is fetched directly; anything else returns the best search match.
+ * DOCS: https://docs.github.com/en/rest/repos/repos#get-a-repository
  *
- * @param name - The repository name to search for
+ * @param name - The repository name ("owner/repo" or a bare name)
  * @returns Normalized repo data or null if not found
  */
 export const queryRepo = async (
   token: string,
   name: string,
 ): Promise<RepoData | null> => {
-  const { results } = await searchRepos(token, name, { perPage: 1 });
+  const [owner, repo, ...rest] = name.split('/');
+
+  if (owner && repo && rest.length === 0) {
+    try {
+      const result = await githubFetch<GitHubRepoSearchResult>(
+        token,
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      );
+      return normalizeRepoData(result);
+    } catch (error) {
+      if (error instanceof UpstreamError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  const { results } = await searchRepos(token, name, {
+    sort: 'best-match',
+    perPage: 1,
+  });
   return results[0] ?? null;
 };

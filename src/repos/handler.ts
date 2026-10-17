@@ -10,7 +10,13 @@ import {
 } from '../common/params';
 import { searchRepos, queryRepo } from './github';
 
-const SORTS = ['stars', 'forks', 'help-wanted-issues', 'updated'] as const;
+const SORTS = [
+  'best-match',
+  'stars',
+  'forks',
+  'help-wanted-issues',
+  'updated',
+] as const;
 const ORDERS = ['asc', 'desc'] as const;
 
 export const handleRepoSearch = async (
