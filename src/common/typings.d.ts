@@ -6,6 +6,8 @@ export interface Bindings {
   DISCOGS_TOKEN: string;
   GH_TOKEN: string;
   YOUTUBE_KEY: string;
+  /** Optional shared secret. When set, requests must send `Authorization: Bearer <API_KEY>`. */
+  API_KEY?: string;
 }
 
 export interface AppEnv {

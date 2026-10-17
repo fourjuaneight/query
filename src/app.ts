@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
+import type { MiddlewareHandler } from 'hono';
+import { bearerAuth } from 'hono/bearer-auth';
 import { cors } from 'hono/cors';
+import { createMiddleware } from 'hono/factory';
 import { logger } from 'hono/logger';
 
 import type { AppEnv } from './common/typings';
@@ -31,6 +34,8 @@ import {
 } from './shows/handler';
 import { handleVideoQuery } from './yt/handler';
 
+const unauthorized = { success: false, error: 'Unauthorized' };
+
 const app = new Hono<AppEnv>();
 
 // Middleware
@@ -39,6 +44,22 @@ app.use('*', cors());
 
 // Health check
 app.get('/', ctx => ctx.text('Why are you here?'));
+
+// Auth: enforced only when the API_KEY secret is configured
+const requireApiKey = createMiddleware<AppEnv>(async (ctx, next) => {
+  const token = ctx.env?.API_KEY;
+  if (!token) return next();
+
+  const auth: MiddlewareHandler<AppEnv> = bearerAuth({
+    token,
+    noAuthenticationHeader: { message: unauthorized },
+    invalidAuthenticationHeader: { message: unauthorized },
+    invalidToken: { message: unauthorized },
+  });
+  return auth(ctx, next);
+});
+
+app.use('*', requireApiKey);
 
 // --- Books ---
 app.get('/books/isbn', handleBookByISBN);

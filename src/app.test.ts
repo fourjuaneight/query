@@ -84,3 +84,43 @@ describe('App routing', () => {
     expect(body.error).toContain('Invalid');
   });
 });
+
+describe('Auth', () => {
+  const env = { API_KEY: 'secret' };
+
+  it('is disabled when API_KEY is not set', async () => {
+    const res = await app.request('/books/isbn', {}, {});
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects requests without a bearer token', async () => {
+    const res = await app.request('/books/isbn', {}, env);
+    expect(res.status).toBe(401);
+    expect(res.headers.get('WWW-Authenticate')).toContain('Bearer');
+    expect(await res.json()).toEqual({ success: false, error: 'Unauthorized' });
+  });
+
+  it('rejects requests with the wrong token', async () => {
+    const res = await app.request(
+      '/books/isbn',
+      { headers: { Authorization: 'Bearer nope' } },
+      env,
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('accepts requests with the right token', async () => {
+    const res = await app.request(
+      '/books/isbn',
+      { headers: { Authorization: 'Bearer secret' } },
+      env,
+    );
+    // Passes auth, then fails validation for the missing param
+    expect(res.status).toBe(400);
+  });
+
+  it('leaves the health check public', async () => {
+    const res = await app.request('/', {}, env);
+    expect(res.status).toBe(200);
+  });
+});
