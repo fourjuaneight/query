@@ -9,8 +9,9 @@ Query is a lightweight API aggregation service that wraps commonly used (for me)
 - **API client** (e.g. `openlibrary.ts`, `igdb.ts`) — handles authentication, fetching, and data normalization.
 - **Handler** (`handler.ts`) — validates incoming request parameters and returns standardized JSON responses.
 - **Types** (`typings.d.ts`) — TypeScript type definitions for both raw API responses and normalized output.
+- **MCP tools** (`tools.ts`) — exposes the same API client calls as read-only [MCP](https://modelcontextprotocol.io) tools (see [MCP server](#mcp-server)).
 
-Routes are registered in [`src/app.ts`](src/app.ts) using [Hono](https://hono.dev), a small, fast web framework designed for edge runtimes. Hono was chosen because it runs natively on Cloudflare Workers with zero additional adapters, has a familiar Express-like API, and adds virtually no overhead.
+The Worker entry is [`src/worker.ts`](src/worker.ts). It serves the REST API, the MCP endpoint and the OAuth endpoints from one Worker. REST routes are registered in [`src/app.ts`](src/app.ts) using [Hono](https://hono.dev), a small, fast web framework designed for edge runtimes. Hono was chosen because it runs natively on Cloudflare Workers with zero additional adapters, has a familiar Express-like API, and adds virtually no overhead.
 
 All responses follow a uniform shape:
 
@@ -70,8 +71,10 @@ The following environment variables must be set. Configure them as [Wrangler sec
 
 | Variable / binding | Purpose |
 |---|---|
-| `API_KEY` (optional secret) | When set, every route except `/` requires `Authorization: Bearer <API_KEY>`. When unset, the API is open. |
-| `RATE_LIMITER` (binding in [`wrangler.toml`](wrangler.toml)) | Per-IP limit of 60 requests per 60 seconds. Remove the `[[ratelimits]]` block to disable. |
+| `API_KEY` (optional secret) | When set, every REST route except `/` requires `Authorization: Bearer <API_KEY>`. When unset, the REST API is open. It is also the owner password for MCP sign-in; when unset, MCP sign-in is disabled. |
+| `RATE_LIMITER` (binding in [`wrangler.toml`](wrangler.toml)) | Per-IP limit of 60 requests per 60 seconds (REST, MCP and the sign-in page). Remove the `[[ratelimits]]` block to disable. |
+| `PUBLIC_URL` (var in [`wrangler.toml`](wrangler.toml)) | Public origin of the Worker. The MCP endpoint is `<PUBLIC_URL>/mcp`. |
+| `OAUTH_KV` (binding in [`wrangler.toml`](wrangler.toml)) | KV namespace for MCP OAuth clients, grants and tokens. |
 
 Successful `GET` responses are cached for one hour (`Cache-Control: max-age=3600`) using the Workers Cache API. Cloudflare documents the Cache API as functional on custom domains.
 
@@ -87,12 +90,14 @@ cd query
 # Install dependencies
 pnpm install
 
-# Start the local development server (uses Wrangler)
+# Start the local development server (uses Wrangler; REST, MCP and OAuth)
 pnpm dev
 
-# Or run locally with Node via tsx
+# Or run locally with Node via tsx (REST API only, no MCP)
 pnpm dev:local
 ```
+
+For `pnpm dev`, put local values in a `.dev.vars` file (git-ignored), for example `PUBLIC_URL=http://localhost:8787` and `API_KEY=dev`, next to the API credentials.
 
 For more on Hono's API and features, see the [Hono documentation](https://hono.dev/docs/).
 
@@ -184,14 +189,49 @@ curl "http://localhost:8787/yt/video?url=https://youtu.be/YQWLndmkofU"
 curl "http://localhost:8787/mtg/cards?name=Black+Lotus"
 ```
 
+## MCP server
+
+The Worker is also a remote [Model Context Protocol](https://modelcontextprotocol.io) server at `/mcp`, so Claude (and other MCP clients) can use every API as a tool.
+
+- **Transport:** Streamable HTTP, stateless. It serves the `2026-07-28` protocol and falls back to `2025-*` clients ([`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)).
+- **Auth:** OAuth 2.1 with PKCE ([`@cloudflare/workers-oauth-provider`](https://github.com/cloudflare/workers-oauth-provider)). Clients register with Client ID Metadata Documents or Dynamic Client Registration. The `/authorize` consent page asks for the owner password, which is the `API_KEY` secret.
+- **Tools:** 21 read-only tools, one per REST route. Results are JSON text. Errors come back as tool errors with the same messages as the REST API.
+
+| Tool | REST route |
+|---|---|
+| `get_book_by_isbn`, `search_books` | `/books/isbn`, `/books/search` |
+| `search_games`, `find_game`, `get_game` | `/games/search`, `/games/query`, `/games/:id` |
+| `search_manga`, `get_manga` | `/manga/search`, `/manga/:id` |
+| `find_movie`, `search_movies`, `get_movie` | `/movies/query`, `/movies/search`, `/movies/:id` |
+| `find_tv_show`, `search_tv_shows`, `get_tv_show` | `/shows/query`, `/shows/search`, `/shows/:id` |
+| `get_mtg_card` | `/mtg/cards` |
+| `get_pokemon_card` | `/pkm/cards` |
+| `search_music_artists`, `search_music_albums`, `search_music_tracks` | `/music/artists`, `/music/albums`, `/music/tracks` |
+| `search_repos`, `get_repo` | `/repos/search`, `/repos/query` |
+| `get_youtube_video` | `/yt/video` |
+
+Tool parameters match the REST query parameters, except that `per_page` is `perPage` and `:id` path segments are an `id` argument.
+
+### Connect Claude
+
+- **claude.ai (web, desktop and mobile):** Settings → Connectors → Add custom connector. Enter `https://<your-worker>/mcp`, then sign in with the `API_KEY` password when asked.
+- **Claude Code:** `claude mcp add --transport http query https://<your-worker>/mcp`, then run `/mcp` in Claude Code to sign in.
+- **MCP Inspector (local testing):** `npx @modelcontextprotocol/inspector`, then connect to `http://localhost:8787/mcp`.
+
 ## Deployment
 
 This project is configured to deploy to [Cloudflare Workers](https://developers.cloudflare.com/workers/) via [Wrangler](https://developers.cloudflare.com/workers/cli-wrangler/). The configuration lives in [`wrangler.toml`](wrangler.toml).
 
 ```sh
-# Deploy to Cloudflare Workers (Wrangler bundles src/app.ts)
+# Deploy to Cloudflare Workers (Wrangler bundles src/worker.ts)
 pnpm deploy
 ```
+
+For the MCP server, do these steps once before the first deploy:
+
+1. Create the OAuth KV namespace with `pnpm exec wrangler kv namespace create OAUTH_KV` and put its `id` in the `[[kv_namespaces]]` block of [`wrangler.toml`](wrangler.toml).
+2. Set `PUBLIC_URL` under `[vars]` to the Worker's public origin (your `workers.dev` URL or custom domain, no trailing slash).
+3. Set the `API_KEY` secret (below). MCP sign-in stays disabled without it.
 
 Before deploying, make sure all required secrets are set in your Cloudflare dashboard or via the Wrangler CLI:
 
@@ -203,7 +243,7 @@ wrangler secret put DISCOGS_TOKEN
 wrangler secret put GH_TOKEN
 wrangler secret put YOUTUBE_KEY
 
-# Optional: require a bearer token on every route
+# Bearer token for the REST API and owner password for MCP sign-in
 wrangler secret put API_KEY
 ```
 
@@ -229,6 +269,8 @@ pnpm typecheck
 
 A Husky pre-commit hook runs Prettier and ESLint on staged files. It installs with `pnpm install`.
 
+The OAuth library imports `cloudflare:workers`. Under Vitest this module is aliased to a small stub ([`src/test/cloudflare-workers.ts`](src/test/cloudflare-workers.ts)), so the Worker entry runs under Node.
+
 All handler tests use Hono's built-in `app.request()` helper to exercise routes without a running server. External API calls are mocked via `vi.stubGlobal('fetch', ...)`, so the suite runs entirely offline and stays fast.
 
 | Test file | What it covers |
@@ -248,3 +290,5 @@ All handler tests use Hono's built-in `app.request()` helper to exercise routes 
 | `src/shows/handler.test.ts` | Query, search, by-ID, language/year options, 404, error paths, no-poster edge case |
 | `src/yt/handler.test.ts` | Full URL, short URL, share link, raw ID, extra query params, invalid input, 404, error paths, thumbnail resolution fallback |
 | `src/yt/youtube.test.ts` | Video ID extraction across URL formats |
+| `src/mcp/server.test.ts` | Tool list and annotations, each tool reaches its service, JSON results, not-found and upstream error mapping, input validation |
+| `src/worker.test.ts` | REST auth through the Worker entry, OAuth discovery metadata, `/mcp` 401 challenge, full sign-in (registration, consent password, PKCE token exchange) and MCP calls with the token |
