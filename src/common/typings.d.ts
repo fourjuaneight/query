@@ -8,6 +8,10 @@ export interface Bindings {
   YOUTUBE_KEY: string;
 }
 
+export interface AppEnv {
+  Bindings: Bindings;
+}
+
 // TMDB
 export interface Genre {
   id: number;

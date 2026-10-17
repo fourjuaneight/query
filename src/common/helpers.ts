@@ -1,8 +1,95 @@
 import type { Context } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
-import type { Bindings } from './typings';
+import type { AppEnv } from './typings';
 import { TMDB_BASE_URL, TMDB_IMAGE_BASE_URL } from './constants';
+
+type QueryParams = Record<string, string | number | undefined>;
+
+/**
+ * Error raised when a 3rd-party API request fails.
+ * Carries the upstream status so the app can map it to a client response
+ * without leaking the upstream body (kept in `message` for logs only).
+ */
+export class UpstreamError extends Error {
+  override readonly name = 'UpstreamError';
+
+  constructor(
+    readonly service: string,
+    readonly status: number,
+    message: string,
+  ) {
+    super(`[${service}] ${message}`);
+  }
+}
+
+/**
+ * Build a URL from a base and a set of query params, skipping undefined values.
+ */
+export const buildUrl = (base: string, params: QueryParams = {}): URL => {
+  const url = new URL(base);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  return url;
+};
+
+/**
+ * Safely parse a JSON response body with a generic type assertion.
+ * Centralizes the untyped Response.json() → T conversion so all
+ * callers get properly typed data without per-call ESLint suppressions.
+ *
+ * @param response - The fetch Response to parse
+ * @returns Parsed JSON body typed as T
+ */
+export const parseJSON = async <T>(response: Response): Promise<T> =>
+  response.json<T>();
+
+/**
+ * Fetch JSON from a 3rd-party API.
+ * Throws an UpstreamError on network failure or non-2xx status.
+ * Only the URL path is included in error messages so API keys passed
+ * as query params never reach the logs.
+ *
+ * @param service - Display name of the upstream service (used in errors)
+ * @param url - The request URL
+ * @param init - Optional fetch init
+ * @returns Parsed JSON response
+ */
+export const upstreamFetch = async <T>(
+  service: string,
+  url: string | URL,
+  init: RequestInit = {},
+): Promise<T> => {
+  const target = new URL(url);
+
+  let response: Response;
+  try {
+    response = await fetch(target.toString(), init);
+  } catch (networkError) {
+    throw new UpstreamError(
+      service,
+      0,
+      `Network error requesting ${target.pathname} - ${String(networkError)}`,
+    );
+  }
+
+  if (!response.ok) {
+    const errorResp = (await response.text()).slice(0, 500);
+    throw new UpstreamError(
+      service,
+      response.status,
+      `${response.status} ${response.statusText} (${target.pathname}) - ${errorResp}`,
+    );
+  }
+
+  return parseJSON<T>(response);
+};
 
 /**
  * Build full poster URL from path
@@ -24,75 +111,53 @@ export const buildPosterUrl = (posterPath: string | null): string | null =>
 export const tmdbFetch = async <T>(
   apiKey: string,
   endpoint: string,
-  params: Record<string, string | number> = {},
-): Promise<T> => {
-  try {
-    const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
-    url.searchParams.set('api_key', apiKey);
-
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null) {
-        url.searchParams.set(key, String(value));
-      }
-    }
-
-    let response: Response;
-    try {
-      response = await fetch(url.toString(), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (networkError) {
-      throw new Error(
-        `[tmdbFetch]: Network error requesting ${endpoint} - ${String(networkError)}`,
-      );
-    }
-
-    if (response.status !== 200) {
-      const errorResp = await response.text();
-
-      throw new Error(
-        `[tmdbFetch]: ${response.status} - ${response.statusText} (${endpoint}) - ${errorResp}`,
-      );
-    }
-
-    return parseJSON<T>(response);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[tmdbFetch] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[tmdbFetch] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
-};
-
-/**
- * Safely parse a JSON response body with a generic type assertion.
- * Centralizes the untyped Response.json() → T conversion so all
- * callers get properly typed data without per-call ESLint suppressions.
- *
- * @param response - The fetch Response to parse
- * @returns Parsed JSON body typed as T
- */
-export const parseJSON = async <T>(response: Response): Promise<T> =>
-  (await response.json()) as T;
+  params: QueryParams = {},
+): Promise<T> =>
+  upstreamFetch<T>(
+    'TMDB',
+    buildUrl(`${TMDB_BASE_URL}${endpoint}`, { api_key: apiKey, ...params }),
+  );
 
 /**
  * Standard JSON success response.
  */
-export const jsonSuccess = (
-  ctx: Context<{ Bindings: Bindings }>,
-  data: unknown,
-): Response => ctx.json({ success: true, data });
+export const jsonSuccess = (ctx: Context<AppEnv>, data: unknown): Response =>
+  ctx.json({ success: true, data });
 
 /**
  * Standard JSON error response.
  */
 export const jsonError = (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
   message: string,
   status: ContentfulStatusCode = 400,
 ): Response => ctx.json({ success: false, error: message }, status);
+
+/**
+ * Map any thrown error to a standard JSON error response.
+ * - HTTPException (validation, auth): its own status and message
+ * - UpstreamError: 404/429 pass through, everything else becomes 502
+ * - Anything else: generic 500
+ * Upstream details are logged, never returned to the client.
+ */
+export const errorResponse = (err: Error, ctx: Context<AppEnv>): Response => {
+  if (err instanceof HTTPException) {
+    return err.res
+      ? err.getResponse()
+      : jsonError(ctx, err.message, err.status);
+  }
+
+  console.error(err.message);
+
+  if (err instanceof UpstreamError) {
+    if (err.status === 404) {
+      return jsonError(ctx, `${err.service}: not found`, 404);
+    }
+    if (err.status === 429) {
+      return jsonError(ctx, `${err.service}: rate limit exceeded`, 429);
+    }
+    return jsonError(ctx, `${err.service}: upstream request failed`, 502);
+  }
+
+  return jsonError(ctx, 'Internal Server Error', 500);
+};
