@@ -1,76 +1,54 @@
 import type { Context } from 'hono';
 
-import type { Bindings } from '../common/typings';
+import type { AppEnv } from '../common/typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
+import {
+  idParam,
+  intQuery,
+  optionalQuery,
+  requireQuery,
+} from '../common/params';
 import { queryMovie, queryMovieById, searchMovies } from './tmdb';
 
+const YEAR_RANGE = { min: 1800, max: 2200 };
+
 export const handleMovieQuery = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const title = ctx.req.query('title');
-  if (!title) {
-    return jsonError(ctx, 'Missing required query parameter: title');
-  }
+  const title = requireQuery(ctx, 'title');
 
-  const language = ctx.req.query('language');
-  const year = ctx.req.query('year');
-
-  try {
-    const result = await queryMovie(ctx.env.TMDB_KEY, title, {
-      ...(language && { language }),
-      ...(year && { year: parseInt(year, 10) }),
-    });
-    if (!result) {
-      return jsonError(ctx, `No movie found for title: ${title}`, 404);
-    }
-    return jsonSuccess(ctx, result);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
+  const result = await queryMovie(ctx.env.TMDB_KEY, title, {
+    language: optionalQuery(ctx, 'language'),
+    year: intQuery(ctx, 'year', YEAR_RANGE),
+  });
+  if (!result) {
+    return jsonError(ctx, `No movie found for title: ${title}`, 404);
   }
+  return jsonSuccess(ctx, result);
 };
 
 export const handleMovieById = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const id = ctx.req.param('id');
-  const movieId = parseInt(id ?? '', 10);
-  if (isNaN(movieId)) {
-    return jsonError(ctx, 'Invalid movie ID');
-  }
+  const movieId = idParam(ctx, 'movie');
 
-  const language = ctx.req.query('language');
-
-  try {
-    const result = await queryMovieById(ctx.env.TMDB_KEY, movieId, language);
-    return jsonSuccess(ctx, result);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const result = await queryMovieById(
+    ctx.env.TMDB_KEY,
+    movieId,
+    optionalQuery(ctx, 'language'),
+  );
+  return jsonSuccess(ctx, result);
 };
 
 export const handleMovieSearch = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const query = ctx.req.query('query');
-  if (!query) {
-    return jsonError(ctx, 'Missing required query parameter: query');
-  }
+  const query = requireQuery(ctx, 'query');
 
-  const language = ctx.req.query('language');
-  const year = ctx.req.query('year');
-  const page = ctx.req.query('page');
-
-  try {
-    const results = await searchMovies(ctx.env.TMDB_KEY, query, {
-      ...(language && { language }),
-      ...(year && { year: parseInt(year, 10) }),
-      ...(page && { page: parseInt(page, 10) }),
-    });
-    return jsonSuccess(ctx, results);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const results = await searchMovies(ctx.env.TMDB_KEY, query, {
+    language: optionalQuery(ctx, 'language'),
+    year: intQuery(ctx, 'year', YEAR_RANGE),
+    page: intQuery(ctx, 'page', { max: 500 }),
+  });
+  return jsonSuccess(ctx, results);
 };

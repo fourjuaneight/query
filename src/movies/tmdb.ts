@@ -8,21 +8,20 @@ import type {
 } from './typings';
 
 /**
- * Search for a movie by title and return the first result's ID
+ * Search for a movie by title
  * DOCS: https://developer.themoviedb.org/reference/search-movie
  */
 const searchMovie = async (
   apiKey: string,
   query: string,
   options: TMDBQueryOptions = {},
-): Promise<TMDBMovieSearchResponse> => {
-  return tmdbFetch<TMDBMovieSearchResponse>(apiKey, '/search/movie', {
+): Promise<TMDBMovieSearchResponse> =>
+  tmdbFetch<TMDBMovieSearchResponse>(apiKey, '/search/movie', {
     query,
     language: options.language ?? 'en-US',
     page: options.page ?? 1,
-    ...(options.year && { year: options.year }),
+    year: options.year,
   });
-};
 
 /**
  * Get detailed movie information by ID (including credits)
@@ -32,12 +31,26 @@ const getMovieDetails = async (
   apiKey: string,
   movieId: number,
   language = 'en-US',
-): Promise<TMDBMovieDetails> => {
-  return tmdbFetch<TMDBMovieDetails>(apiKey, `/movie/${movieId}`, {
+): Promise<TMDBMovieDetails> =>
+  tmdbFetch<TMDBMovieDetails>(apiKey, `/movie/${movieId}`, {
     language,
     append_to_response: 'credits',
   });
-};
+
+/**
+ * Normalize TMDB movie details into a MovieData object
+ */
+const normalizeMovie = (details: TMDBMovieDetails): MovieData => ({
+  title: details.title,
+  releaseDate: details.release_date,
+  director:
+    details.credits?.crew.find(member => member.job === 'Director')?.name ??
+    null,
+  genres: details.genres.map(genre => genre.name),
+  runtime: details.runtime,
+  overview: details.overview,
+  posterUrl: buildPosterUrl(details.poster_path),
+});
 
 /**
  * Query movie data by title
@@ -52,47 +65,15 @@ export const queryMovie = async (
   title: string,
   options: TMDBQueryOptions = {},
 ): Promise<MovieData | null> => {
-  try {
-    // Search for the movie
-    const searchResults = await searchMovie(apiKey, title, options);
+  const { results } = await searchMovie(apiKey, title, options);
 
-    if (searchResults.results.length === 0) {
-      return null;
-    }
+  // Get the first (most relevant) result
+  const [first] = results;
+  if (!first) return null;
 
-    // Get the first (most relevant) result
-    const firstResult = searchResults.results[0];
-    if (!firstResult) {
-      return null;
-    }
-    const movieId = firstResult.id;
-
-    // Fetch detailed information with credits
-    const details = await getMovieDetails(apiKey, movieId, options.language);
-
-    // Extract director from crew
-    const director =
-      details.credits?.crew.find(member => member.job === 'Director')?.name ??
-      null;
-
-    return {
-      title: details.title,
-      releaseDate: details.release_date,
-      director,
-      genres: details.genres.map(genre => genre.name),
-      runtime: details.runtime,
-      overview: details.overview,
-      posterUrl: buildPosterUrl(details.poster_path),
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryMovie] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryMovie] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  return normalizeMovie(
+    await getMovieDetails(apiKey, first.id, options.language),
+  );
 };
 
 /**
@@ -107,33 +88,8 @@ export const queryMovieById = async (
   apiKey: string,
   movieId: number,
   language = 'en-US',
-): Promise<MovieData> => {
-  try {
-    const details = await getMovieDetails(apiKey, movieId, language);
-
-    const director =
-      details.credits?.crew.find(member => member.job === 'Director')?.name ??
-      null;
-
-    return {
-      title: details.title,
-      releaseDate: details.release_date,
-      director,
-      genres: details.genres.map(genre => genre.name),
-      runtime: details.runtime,
-      overview: details.overview,
-      posterUrl: buildPosterUrl(details.poster_path),
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryMovieById] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryMovieById] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
-};
+): Promise<MovieData> =>
+  normalizeMovie(await getMovieDetails(apiKey, movieId, language));
 
 /**
  * Search movies and return multiple results
@@ -148,46 +104,18 @@ export const searchMovies = async (
   query: string,
   options: TMDBQueryOptions = {},
 ): Promise<MovieSearchResponse> => {
-  try {
-    const response = await searchMovie(apiKey, query, options);
+  const response = await searchMovie(apiKey, query, options);
 
-    const results = await Promise.all(
-      response.results.map(async movie => {
-        const details = await getMovieDetails(
-          apiKey,
-          movie.id,
-          options.language,
-        );
+  const results = await Promise.all(
+    response.results.map(async movie =>
+      normalizeMovie(await getMovieDetails(apiKey, movie.id, options.language)),
+    ),
+  );
 
-        const director =
-          details.credits?.crew.find(member => member.job === 'Director')
-            ?.name ?? null;
-
-        return {
-          title: details.title,
-          releaseDate: details.release_date,
-          director,
-          genres: details.genres.map(genre => genre.name),
-          runtime: details.runtime,
-          overview: details.overview,
-          posterUrl: buildPosterUrl(details.poster_path),
-        };
-      }),
-    );
-
-    return {
-      results,
-      totalResults: response.total_results,
-      totalPages: response.total_pages,
-      page: response.page,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[searchMovies] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[searchMovies] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  return {
+    results,
+    totalResults: response.total_results,
+    totalPages: response.total_pages,
+    page: response.page,
+  };
 };
