@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
-import type { Bindings } from './common/typings';
+import type { AppEnv } from './common/typings';
 import { errorResponse } from './common/helpers';
 import { handleBookByISBN, handleBookSearch } from './books/handler';
 import {
@@ -31,7 +31,7 @@ import {
 } from './shows/handler';
 import { handleVideoQuery } from './yt/handler';
 
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<AppEnv>();
 
 // Middleware
 app.use('*', logger());
@@ -41,45 +41,45 @@ app.use('*', cors());
 app.get('/', ctx => ctx.text('Why are you here?'));
 
 // --- Books ---
-app.get('/books/isbn', async ctx => handleBookByISBN(ctx));
-app.get('/books/search', async ctx => handleBookSearch(ctx));
+app.get('/books/isbn', handleBookByISBN);
+app.get('/books/search', handleBookSearch);
 
 // --- Games ---
-app.get('/games/search', async ctx => handleGameSearch(ctx));
-app.get('/games/query', async ctx => handleGameQuery(ctx));
-app.get('/games/:id', async ctx => handleGameById(ctx));
+app.get('/games/search', handleGameSearch);
+app.get('/games/query', handleGameQuery);
+app.get('/games/:id', handleGameById);
 
 // --- Manga ---
-app.get('/manga/search', async ctx => handleMangaSearch(ctx));
-app.get('/manga/:id', async ctx => handleMangaDetails(ctx));
+app.get('/manga/search', handleMangaSearch);
+app.get('/manga/:id', handleMangaDetails);
 
 // --- Movies ---
-app.get('/movies/query', async ctx => handleMovieQuery(ctx));
-app.get('/movies/search', async ctx => handleMovieSearch(ctx));
-app.get('/movies/:id', async ctx => handleMovieById(ctx));
+app.get('/movies/query', handleMovieQuery);
+app.get('/movies/search', handleMovieSearch);
+app.get('/movies/:id', handleMovieById);
 
 // --- MTG ---
-app.get('/mtg/cards', async ctx => handleMTGCard(ctx));
+app.get('/mtg/cards', handleMTGCard);
 
 // --- Music ---
-app.get('/music/artists', async ctx => handleArtistSearch(ctx));
-app.get('/music/albums', async ctx => handleAlbumSearch(ctx));
-app.get('/music/tracks', async ctx => handleTrackSearch(ctx));
+app.get('/music/artists', handleArtistSearch);
+app.get('/music/albums', handleAlbumSearch);
+app.get('/music/tracks', handleTrackSearch);
 
 // --- Pokémon TCG ---
-app.get('/pkm/cards', async ctx => handlePKMCard(ctx));
+app.get('/pkm/cards', handlePKMCard);
 
 // --- Repos ---
-app.get('/repos/search', async ctx => handleRepoSearch(ctx));
-app.get('/repos/query', async ctx => handleRepoQuery(ctx));
+app.get('/repos/search', handleRepoSearch);
+app.get('/repos/query', handleRepoQuery);
 
 // --- TV Shows ---
-app.get('/shows/query', async ctx => handleTVShowQuery(ctx));
-app.get('/shows/search', async ctx => handleTVShowSearch(ctx));
-app.get('/shows/:id', async ctx => handleTVShowById(ctx));
+app.get('/shows/query', handleTVShowQuery);
+app.get('/shows/search', handleTVShowSearch);
+app.get('/shows/:id', handleTVShowById);
 
 // --- YouTube ---
-app.get('/yt/video', async ctx => handleVideoQuery(ctx));
+app.get('/yt/video', handleVideoQuery);
 
 // 404 handler
 app.notFound(ctx => ctx.json({ success: false, error: 'Not Found' }, 404));
