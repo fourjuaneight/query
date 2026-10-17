@@ -9,7 +9,7 @@ import {
   runTool,
   text,
 } from '../mcp/helpers';
-import { MAX_LIMIT, getPKMCard } from './tcgdex';
+import { DEFAULT_LIMIT, MAX_LIMIT, getPKMCard } from './tcgdex';
 
 export const registerPKMTools = (server: McpServer): void => {
   server.registerTool(
@@ -20,8 +20,12 @@ export const registerPKMTools = (server: McpServer): void => {
         'Find Pokémon Trading Card Game cards on TCGdex by name, optionally narrowed by set. Returns a list of matching cards.',
       inputSchema: z.object({
         name: text('Card name'),
-        set: optionalText('Set name or ID'),
-        limit: int('Maximum number of results', { max: MAX_LIMIT }),
+        set: optionalText(
+          'TCGdex set ID (e.g. "base1", "sv03.5"); set names do not match',
+        ),
+        limit: int(`Maximum number of results (default ${DEFAULT_LIMIT})`, {
+          max: MAX_LIMIT,
+        }),
         page: page(),
       }),
       annotations: READ_ONLY,

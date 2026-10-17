@@ -23,10 +23,18 @@ export const registerRepoTools = (server: McpServer, env: Bindings): void => {
       inputSchema: z.object({
         query: text('Search terms (GitHub search syntax is allowed)'),
         language: optionalText('Programming language to filter by'),
-        sort: z.enum(SORTS).optional().describe('Sort field'),
-        order: z.enum(ORDERS).optional().describe('Sort order'),
+        sort: z
+          .enum(SORTS)
+          .optional()
+          .describe(
+            'Sort field (default "stars"; "best-match" sorts by relevance)',
+          ),
+        order: z
+          .enum(ORDERS)
+          .optional()
+          .describe('Sort order (default "desc")'),
         page: page(),
-        perPage: int('Results per page', { max: 100 }),
+        perPage: int('Results per page (default 10)', { max: 100 }),
       }),
       annotations: READ_ONLY,
     },

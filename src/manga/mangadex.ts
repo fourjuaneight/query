@@ -114,10 +114,12 @@ export const searchManga = async (
   );
 
   return response.data.map(manga => ({
+    id: manga.id,
     title: pickTitle(manga.attributes.title),
     description: manga.attributes.description?.en ?? '',
     ...extractRelationships(manga),
     year: manga.attributes.year,
     status: manga.attributes.status,
+    url: `https://mangadex.org/title/${manga.id}`,
   }));
 };

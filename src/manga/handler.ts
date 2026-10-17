@@ -5,7 +5,8 @@ import { jsonError, jsonSuccess } from '../common/helpers';
 import { intQuery, requireQuery } from '../common/params';
 import { getMangaDetails, searchManga } from './mangadex';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const handleMangaDetails = async (
   ctx: Context<AppEnv>,

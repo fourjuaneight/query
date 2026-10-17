@@ -162,12 +162,15 @@ export interface MangaSearchOptions {
 }
 
 export interface MangaSearchResult {
+  /** MangaDex manga ID (use with /manga/:id and the get_manga tool) */
+  id: string;
   title: string;
   description: string;
   author: string;
   year: number | null;
   status: string;
   cover: string | null;
+  url: string;
 }
 
 export interface MangaDetails {

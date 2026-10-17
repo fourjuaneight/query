@@ -33,7 +33,7 @@ export const registerBookTools = (server: McpServer): void => {
         'Search OpenLibrary for books by title. Returns a list of matching books.',
       inputSchema: z.object({
         title: text('Book title to search for'),
-        limit: int('Maximum number of results', { max: 100 }),
+        limit: int('Maximum number of results (default 10)', { max: 100 }),
         page: page(),
         language: optionalText('Language code to filter by (e.g. "eng")'),
       }),

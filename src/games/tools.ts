@@ -11,10 +11,10 @@ export const registerGameTools = (server: McpServer, env: Bindings): void => {
     {
       title: 'Search games',
       description:
-        'Search IGDB for video games. Returns a list of matching games.',
+        'Search IGDB for video games. Returns a list of matching games, each with its IGDB `id` for get_game.',
       inputSchema: z.object({
         query: text('Search terms'),
-        limit: int('Maximum number of results', { max: 500 }),
+        limit: int('Maximum number of results (default 10)', { max: 500 }),
       }),
       annotations: READ_ONLY,
     },
@@ -26,7 +26,7 @@ export const registerGameTools = (server: McpServer, env: Bindings): void => {
     {
       title: 'Find game',
       description:
-        'Find the single best IGDB match for a video game title. Returns the game details.',
+        'Find the single best IGDB match for a video game title. Returns the game details, including its IGDB `id`.',
       inputSchema: z.object({ title: text('Game title') }),
       annotations: READ_ONLY,
     },

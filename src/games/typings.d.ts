@@ -51,6 +51,8 @@ export interface IGDBGameSearchResult {
 // Normalized Output Types
 
 export interface GameData {
+  /** IGDB game ID (use with /games/:id and the get_game tool) */
+  id: number;
   title: string;
   summary: string | null;
   releaseDate: string | null;

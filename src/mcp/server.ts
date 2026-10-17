@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/server';
 
+import { name, version } from '../../package.json';
 import type { Bindings } from '../common/typings';
 import { registerBookTools } from '../books/tools';
 import { registerGameTools } from '../games/tools';
@@ -21,8 +22,10 @@ import { registerYouTubeTools } from '../yt/tools';
  */
 export const createMcpServer = (env: Bindings): McpServer => {
   const server = new McpServer(
-    { name: 'query', version: '2.0.0' },
+    { name, version },
     {
+      // The tool list never changes, so clients need not listen for updates
+      capabilities: { tools: { listChanged: false } },
       instructions:
         'Look up books, games, manga, movies, TV shows, Magic: The Gathering and Pokémon cards, music, GitHub repositories and YouTube videos. Tool results are JSON.',
     },

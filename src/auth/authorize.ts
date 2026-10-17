@@ -6,9 +6,13 @@ import type {
 import type { Context } from 'hono';
 
 import type { AppEnv } from '../common/typings';
-
-/** The only user. The consent page signs the owner in with the API_KEY secret. */
-const OWNER_ID = 'owner';
+import {
+  MCP_SCOPE,
+  OWNER_ID,
+  type OwnerProps,
+  keyFingerprint,
+  secretsMatch,
+} from './owner';
 
 const escape = (value: string): string =>
   value.replace(/[&<>"']/g, char => `&#${char.charCodeAt(0)};`);
@@ -35,14 +39,13 @@ const consentPage = (details: ConsentDescription, handle: string): string => {
   const loopback = details.redirectIsLoopback
     ? '<p class="warn"><strong>This sends access to an app on your computer.</strong> Continue only if you just started signing in from it.</p>'
     : '';
-  const scopes = details.scope.map(escape).join(', ') || 'none';
 
   return htmlPage(
     `Authorize ${details.clientName}`,
     `<h1>Allow ${name} to use Query?</h1>
 <p>${origin} Access will be sent to <strong>${escape(details.redirectHost)}</strong>.</p>
 ${loopback}
-<p>Scopes: ${scopes}</p>
+<p>Access: read-only use of Query's lookup tools (${MCP_SCOPE}).</p>
 <form method="post">
   <input type="hidden" name="handle" value="${escape(handle)}">
   <label for="password">Owner password (API key)</label>
@@ -51,29 +54,6 @@ ${loopback}
   <button name="decision" value="deny" formnovalidate>Deny</button>
 </form>`,
   );
-};
-
-/**
- * Compare two secrets in constant time by comparing their SHA-256 digests.
- */
-const secretsMatch = async (
-  given: string,
-  expected: string,
-): Promise<boolean> => {
-  const encoder = new TextEncoder();
-  const [a, b] = await Promise.all(
-    [given, expected].map(value =>
-      crypto.subtle.digest('SHA-256', encoder.encode(value)),
-    ),
-  );
-  const left = new Uint8Array(a!);
-  const right = new Uint8Array(b!);
-
-  let diff = 0;
-  for (let i = 0; i < left.length; i++) {
-    diff |= left[i]! ^ right[i]!;
-  }
-  return diff === 0;
 };
 
 const formText = (form: FormData, name: string): string => {
@@ -92,8 +72,12 @@ const notConfigured = (ctx: Context<AppEnv>): Response =>
 
 type AuthorizeHandler = (ctx: Context<AppEnv>) => Promise<Response>;
 
+// Matched by name: the library's classes can't be imported outside Workers
 const isAuthorizationError = (err: unknown): err is AuthorizationError =>
   err instanceof Error && err.name === 'AuthorizationError';
+
+const isCimdFetchError = (err: unknown): boolean =>
+  err instanceof Error && err.name === 'CimdFetchError';
 
 /**
  * Answer expected OAuth request errors: redirect to the client when the
@@ -105,6 +89,16 @@ const withAuthorizationErrors =
     try {
       return await handler(ctx);
     } catch (err) {
+      if (isCimdFetchError(err)) {
+        // The client's metadata document (CIMD) could not be loaded or validated
+        return ctx.html(
+          htmlPage(
+            'App not verified',
+            '<h1>This app could not be verified</h1><p>Its metadata could not be loaded. Try again in a moment.</p>',
+          ),
+          502,
+        );
+      }
       if (!isAuthorizationError(err)) throw err;
       if (err.redirectTo) return ctx.redirect(err.redirectTo, 302);
       return ctx.html(
@@ -143,7 +137,15 @@ export const handleAuthorizeDecision = withAuthorizationErrors(async ctx => {
   const oauth = ctx.env.OAUTH_PROVIDER;
   if (!apiKey || !oauth) return notConfigured(ctx);
 
-  const form = await ctx.req.formData();
+  let form: FormData;
+  try {
+    form = await ctx.req.formData();
+  } catch {
+    return ctx.html(
+      htmlPage('Bad request', '<h1>Bad request</h1><p>Expected a form.</p>'),
+      400,
+    );
+  }
   const handle = formText(form, 'handle');
 
   if (form.get('decision') !== 'approve') {
@@ -163,13 +165,23 @@ export const handleAuthorizeDecision = withAuthorizationErrors(async ctx => {
     );
   }
 
-  const approved = await oauth.approveConsent(ctx.req.raw, handle);
+  // Grant the one supported scope, whatever the client asked for
+  const approved = await oauth.approveConsent(ctx.req.raw, handle, {
+    scope: [MCP_SCOPE],
+  });
+  const props: OwnerProps = {
+    userId: OWNER_ID,
+    keyId: await keyFingerprint(apiKey),
+  };
   const { redirectTo } = await oauth.completeAuthorization({
     request: approved.request,
     userId: OWNER_ID,
     metadata: {},
     scope: approved.request.scope,
-    props: { userId: OWNER_ID },
+    props,
+    // The owner may connect several accounts of the same client (same
+    // client_id and redirect URI); keep their grants side by side
+    revokeExistingGrants: false,
   });
 
   approved.headers.set('Location', redirectTo);
