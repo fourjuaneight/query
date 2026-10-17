@@ -1,7 +1,8 @@
-import { buildPosterUrl, tmdbFetch } from '../common/helpers';
+import { buildPosterUrl, tmdbFetch, tmdbGenres } from '../common/helpers';
 import type { TMDBQueryOptions } from '../common/typings';
 import type {
   TMDBTVSearchResponse,
+  TMDBTVSearchResult,
   TMDBTVDetails,
   TVShowData,
   TVShowSearchResponse,
@@ -41,6 +42,7 @@ const getTVShowDetails = async (
  * Normalize TMDB TV show details into a TVShowData object
  */
 const normalizeTVShow = (details: TMDBTVDetails): TVShowData => ({
+  id: details.id,
   title: details.name,
   firstAirDate: details.first_air_date,
   lastAirDate: details.last_air_date,
@@ -51,6 +53,26 @@ const normalizeTVShow = (details: TMDBTVDetails): TVShowData => ({
   overview: details.overview,
   status: details.status,
   posterUrl: buildPosterUrl(details.poster_path),
+});
+
+/**
+ * Normalize a TMDB search result into a TVShowData object without details
+ */
+const normalizeSearchResult = (
+  show: TMDBTVSearchResult,
+  genres: Map<number, string>,
+): TVShowData => ({
+  id: show.id,
+  title: show.name,
+  firstAirDate: show.first_air_date,
+  lastAirDate: null,
+  creators: [],
+  genres: (show.genre_ids ?? []).flatMap(id => genres.get(id) ?? []),
+  seasonCount: null,
+  episodeCount: null,
+  overview: show.overview,
+  status: null,
+  posterUrl: buildPosterUrl(show.poster_path),
 });
 
 /**
@@ -94,7 +116,9 @@ export const queryTVShowById = async (
 
 /**
  * Search TV shows and return multiple results
- * Useful when you want to let users pick from search results
+ * Useful when you want to let users pick from search results.
+ * With `details: false`, skips the per-result details request
+ * (creators, counts, and status are empty) and makes 2 requests instead of 21.
  *
  * @param query - Search query
  * @param options - Query options including pagination
@@ -107,13 +131,19 @@ export const searchTVShows = async (
 ): Promise<TVShowSearchResponse> => {
   const response = await searchTVShow(apiKey, query, options);
 
-  const results = await Promise.all(
-    response.results.map(async show =>
-      normalizeTVShow(
-        await getTVShowDetails(apiKey, show.id, options.language),
+  let results: TVShowData[];
+  if (options.details === false) {
+    const genres = await tmdbGenres(apiKey, 'tv', options.language);
+    results = response.results.map(show => normalizeSearchResult(show, genres));
+  } else {
+    results = await Promise.all(
+      response.results.map(async show =>
+        normalizeTVShow(
+          await getTVShowDetails(apiKey, show.id, options.language),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   return {
     results,
