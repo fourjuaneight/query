@@ -175,7 +175,7 @@ export interface MTGItem {
   oracle_text: string | null;
   flavor_text: string | null;
   rarity: string;
-  collector_number: number;
+  collector_number: string;
   artist: string;
   released_at: string;
   image: string;
