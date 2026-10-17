@@ -13,30 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Use Node 22.20.0
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22.20.0
-
+      # Reads the pnpm version from package.json "packageManager"
       - uses: pnpm/action-setup@v4
         name: Install pnpm
-        id: pnpm-install
-        with:
-          version: 10.28.2
-          run_install: |
-            - args: [--frozen-lockfile]
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: echo "pnpm_cache_dir=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v5
-        name: Setup pnpm cache
+      - name: Use Node from .nvmrc
+        uses: actions/setup-node@v6
         with:
-          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Check formatting
         run: pnpm prettier --check "src/**/*.ts"
