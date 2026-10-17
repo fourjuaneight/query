@@ -105,13 +105,13 @@ describe('PKM handler', () => {
       expect(body.data).toEqual([]);
     });
 
-    it('returns 500 when API call fails', async () => {
+    it('returns 502 when API call fails', async () => {
       mockFetch.mockResolvedValueOnce(
         new Response('Server Error', { status: 500, statusText: 'Internal' }),
       );
 
       const res = await app.request('/pkm/cards?name=Charizard');
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
 
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
