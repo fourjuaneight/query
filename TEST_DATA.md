@@ -189,3 +189,47 @@ curl "http://localhost:8787/yt/video?url=https://www.youtube.com/shorts/DeGFRB0M
 # Get video details by video ID
 curl "http://localhost:8787/yt/video?url=DeGFRB0Mor8"
 ```
+
+## MCP
+
+The MCP endpoint needs an OAuth token, so test it with an MCP client instead of `curl`. Start `pnpm dev` with `PUBLIC_URL=http://localhost:8787` and `API_KEY` in `.dev.vars`, then run `npx @modelcontextprotocol/inspector`, connect to `http://localhost:8787/mcp` and sign in with the `API_KEY` password.
+
+```sh
+# Check the OAuth discovery documents and the 401 challenge
+curl "http://localhost:8787/.well-known/oauth-protected-resource/mcp"
+curl "http://localhost:8787/.well-known/oauth-authorization-server"
+curl -i -X POST "http://localhost:8787/mcp"
+```
+
+Sample tool calls (tool name and arguments, as entered in the Inspector or sent by Claude):
+
+```jsonc
+// Books
+{ "name": "get_book_by_isbn", "arguments": { "isbn": "9780441013593" } }
+{ "name": "search_books", "arguments": { "title": "Neuromancer", "limit": 5 } }
+
+// Games
+{ "name": "find_game", "arguments": { "title": "Hades" } }
+{ "name": "get_game", "arguments": { "id": 1942 } }
+
+// Manga
+{ "name": "search_manga", "arguments": { "title": "Berserk", "limit": 3 } }
+
+// Movies and TV shows
+{ "name": "search_movies", "arguments": { "query": "Alien", "year": 1979, "details": false } }
+{ "name": "get_tv_show", "arguments": { "id": 95396 } }
+
+// Cards
+{ "name": "get_mtg_card", "arguments": { "name": "Black Lotus" } }
+{ "name": "get_pokemon_card", "arguments": { "name": "Pikachu", "limit": 5 } }
+
+// Music
+{ "name": "search_music_albums", "arguments": { "title": "Moving Pictures", "artist": "Rush", "perPage": 5 } }
+
+// Repos
+{ "name": "search_repos", "arguments": { "query": "hono", "sort": "stars", "perPage": 5 } }
+{ "name": "get_repo", "arguments": { "name": "honojs/hono" } }
+
+// YouTube
+{ "name": "get_youtube_video", "arguments": { "url": "https://youtu.be/DeGFRB0Mor8" } }
+```
