@@ -1,5 +1,6 @@
 export interface NameOrTitle {
-  en: string;
+  en?: string;
+  [lang: string]: string | undefined;
 }
 
 export interface TagsAttributes {
@@ -24,9 +25,8 @@ export interface AltTitlesEntity {
 }
 
 export interface Description {
-  en: string;
-  ru: string;
-  'pt-br': string;
+  en?: string;
+  [lang: string]: string | undefined;
 }
 
 export interface Links {
@@ -54,7 +54,7 @@ export interface MangaAttributes {
   lastChapter: string;
   publicationDemographic: string;
   status: string;
-  year: number;
+  year: number | null;
   contentRating: string;
   tags?: TagsEntity[] | null;
   state: string;
@@ -174,8 +174,8 @@ export interface MangaDetails {
   title: string;
   description: string;
   author: string;
-  year: number;
+  year: number | null;
   status: string;
-  cover: string;
+  cover: string | null;
   url: string;
 }
