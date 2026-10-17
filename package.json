@@ -15,21 +15,17 @@
     "lint": "eslint --fix \"src/**/*.ts\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
   },
   "author": "Juan Villela",
   "license": "MIT",
   "packageManager": "pnpm@10.28.2",
   "lint-staged": {
     "*.ts": [
-      "pnpm format",
-      "pnpm lint"
+      "prettier --write",
+      "eslint --fix"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   },
   "dependencies": {
     "@hono/node-server": "^1.19.17",
