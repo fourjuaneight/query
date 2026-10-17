@@ -2,6 +2,7 @@
   "name": "query",
   "version": "1.0.0",
   "description": "Wrappers around frequently used 3rd-party APIs.",
+  "type": "module",
   "main": "dist/worker.js",
   "scripts": {
     "build": "esbuild src/app.ts --bundle --outfile=dist/worker.js --format=esm --target=esnext",
