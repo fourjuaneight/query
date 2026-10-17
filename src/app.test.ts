@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import type { ApiBody } from './common/test-types';
 
@@ -122,5 +122,29 @@ describe('Auth', () => {
   it('leaves the health check public', async () => {
     const res = await app.request('/', {}, env);
     expect(res.status).toBe(200);
+  });
+});
+
+describe('Rate limit', () => {
+  it('returns 429 when the limiter rejects the request', async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const res = await app.request(
+      '/books/isbn',
+      { headers: { 'cf-connecting-ip': '203.0.113.7' } },
+      { RATE_LIMITER: { limit } },
+    );
+
+    expect(res.status).toBe(429);
+    expect(limit).toHaveBeenCalledWith({ key: '203.0.113.7' });
+  });
+
+  it('passes through when the limiter allows the request', async () => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const res = await app.request(
+      '/books/isbn',
+      {},
+      { RATE_LIMITER: { limit } },
+    );
+    expect(res.status).toBe(400);
   });
 });

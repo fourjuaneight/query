@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from 'hono';
 import { bearerAuth } from 'hono/bearer-auth';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
+import { HTTPException } from 'hono/http-exception';
 import { logger } from 'hono/logger';
 
 import type { AppEnv } from './common/typings';
@@ -59,7 +60,20 @@ const requireApiKey = createMiddleware<AppEnv>(async (ctx, next) => {
   return auth(ctx, next);
 });
 
-app.use('*', requireApiKey);
+// Rate limit: enforced only when the RATE_LIMITER binding exists
+const rateLimit = createMiddleware<AppEnv>(async (ctx, next) => {
+  const limiter = ctx.env?.RATE_LIMITER;
+  if (!limiter) return next();
+
+  const key = ctx.req.header('cf-connecting-ip') ?? 'anonymous';
+  const { success } = await limiter.limit({ key });
+  if (!success) {
+    throw new HTTPException(429, { message: 'Too Many Requests' });
+  }
+  return next();
+});
+
+app.use('*', requireApiKey, rateLimit);
 
 // --- Books ---
 app.get('/books/isbn', handleBookByISBN);
