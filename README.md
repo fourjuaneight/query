@@ -169,10 +169,7 @@ curl "http://localhost:8787/mtg/cards?name=Black+Lotus"
 This project is configured to deploy to [Cloudflare Workers](https://developers.cloudflare.com/workers/) via [Wrangler](https://developers.cloudflare.com/workers/cli-wrangler/). The configuration lives in [`wrangler.toml`](wrangler.toml).
 
 ```sh
-# Build the worker bundle
-pnpm build
-
-# Deploy to Cloudflare Workers
+# Deploy to Cloudflare Workers (Wrangler bundles src/app.ts)
 pnpm deploy
 ```
 
