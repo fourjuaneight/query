@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
 import type { Bindings } from './common/typings';
+import { errorResponse } from './common/helpers';
 import { handleBookByISBN, handleBookSearch } from './books/handler';
 import {
   handleGameSearch,
@@ -84,9 +85,6 @@ app.get('/yt/video', async ctx => handleVideoQuery(ctx));
 app.notFound(ctx => ctx.json({ success: false, error: 'Not Found' }, 404));
 
 // Error handler
-app.onError((err, ctx) => {
-  console.error(`[app] - ${err.message}`);
-  return ctx.json({ success: false, error: err.message }, 500);
-});
+app.onError(errorResponse);
 
 export default app;
