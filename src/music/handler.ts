@@ -1,86 +1,58 @@
 import type { Context } from 'hono';
 
-import type { Bindings } from '../common/typings';
-import { jsonError, jsonSuccess } from '../common/helpers';
+import type { AppEnv } from '../common/typings';
+import { jsonSuccess } from '../common/helpers';
+import { intQuery, optionalQuery, requireQuery } from '../common/params';
 import { searchArtist, searchAlbum, searchTrack } from './discogs';
 
+const pagination = (
+  ctx: Context<AppEnv>,
+): { page?: number; perPage?: number } => ({
+  page: intQuery(ctx, 'page'),
+  perPage: intQuery(ctx, 'per_page', { max: 100 }),
+});
+
+const filters = (
+  ctx: Context<AppEnv>,
+): { artist?: string; year?: string; genre?: string } => ({
+  artist: optionalQuery(ctx, 'artist'),
+  year: optionalQuery(ctx, 'year'),
+  genre: optionalQuery(ctx, 'genre'),
+});
+
 export const handleArtistSearch = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const name = ctx.req.query('name');
-  if (!name) {
-    return jsonError(ctx, 'Missing required query parameter: name');
-  }
+  const name = requireQuery(ctx, 'name');
 
-  const page = ctx.req.query('page');
-  const perPage = ctx.req.query('per_page');
-
-  try {
-    const results = await searchArtist(ctx.env.DISCOGS_TOKEN, name, {
-      ...(page && { page: parseInt(page, 10) }),
-      ...(perPage && { perPage: parseInt(perPage, 10) }),
-    });
-    return jsonSuccess(ctx, results);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const results = await searchArtist(
+    ctx.env.DISCOGS_TOKEN,
+    name,
+    pagination(ctx),
+  );
+  return jsonSuccess(ctx, results);
 };
 
 export const handleAlbumSearch = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const title = ctx.req.query('title');
-  if (!title) {
-    return jsonError(ctx, 'Missing required query parameter: title');
-  }
+  const title = requireQuery(ctx, 'title');
 
-  const artist = ctx.req.query('artist');
-  const year = ctx.req.query('year');
-  const genre = ctx.req.query('genre');
-  const page = ctx.req.query('page');
-  const perPage = ctx.req.query('per_page');
-
-  try {
-    const results = await searchAlbum(ctx.env.DISCOGS_TOKEN, title, {
-      ...(artist && { artist }),
-      ...(year && { year }),
-      ...(genre && { genre }),
-      ...(page && { page: parseInt(page, 10) }),
-      ...(perPage && { perPage: parseInt(perPage, 10) }),
-    });
-    return jsonSuccess(ctx, results);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const results = await searchAlbum(ctx.env.DISCOGS_TOKEN, title, {
+    ...filters(ctx),
+    ...pagination(ctx),
+  });
+  return jsonSuccess(ctx, results);
 };
 
 export const handleTrackSearch = async (
-  ctx: Context<{ Bindings: Bindings }>,
+  ctx: Context<AppEnv>,
 ): Promise<Response> => {
-  const track = ctx.req.query('track');
-  if (!track) {
-    return jsonError(ctx, 'Missing required query parameter: track');
-  }
+  const track = requireQuery(ctx, 'track');
 
-  const artist = ctx.req.query('artist');
-  const year = ctx.req.query('year');
-  const genre = ctx.req.query('genre');
-  const page = ctx.req.query('page');
-  const perPage = ctx.req.query('per_page');
-
-  try {
-    const results = await searchTrack(ctx.env.DISCOGS_TOKEN, track, {
-      ...(artist && { artist }),
-      ...(year && { year }),
-      ...(genre && { genre }),
-      ...(page && { page: parseInt(page, 10) }),
-      ...(perPage && { perPage: parseInt(perPage, 10) }),
-    });
-    return jsonSuccess(ctx, results);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonError(ctx, message, 500);
-  }
+  const results = await searchTrack(ctx.env.DISCOGS_TOKEN, track, {
+    ...filters(ctx),
+    ...pagination(ctx),
+  });
+  return jsonSuccess(ctx, results);
 };
