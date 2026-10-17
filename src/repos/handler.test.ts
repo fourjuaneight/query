@@ -159,6 +159,51 @@ describe('Repos handlers', () => {
   });
 
   describe('lookup and validation', () => {
+    it('fetches owner/repo directly', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify(githubSearchResponse.items[0]), {
+          status: 200,
+        }),
+      );
+
+      const res = await app.request(
+        '/repos/query?name=torvalds/linux',
+        {},
+        env,
+      );
+      expect(res.status).toBe(200);
+
+      const calledUrl = new URL(mockFetch.mock.calls[0]![0] as string);
+      expect(calledUrl.pathname).toBe('/repos/torvalds/linux');
+
+      const body = await res.json<ApiBody>();
+      expect(body.data.fullName).toBe('torvalds/linux');
+    });
+
+    it('returns 404 when owner/repo does not exist', async () => {
+      mockFetch.mockResolvedValue(
+        new Response('{}', { status: 404, statusText: 'Not Found' }),
+      );
+
+      const res = await app.request(
+        '/repos/query?name=nobody/nothing',
+        {},
+        env,
+      );
+      expect(res.status).toBe(404);
+    });
+
+    it('uses best-match ranking for a bare name', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify(githubSearchResponse), { status: 200 }),
+      );
+
+      await app.request('/repos/query?name=linux', {}, env);
+
+      const calledUrl = new URL(mockFetch.mock.calls[0]![0] as string);
+      expect(calledUrl.searchParams.has('sort')).toBe(false);
+    });
+
     it('includes totalPages in search results', async () => {
       mockFetch.mockResolvedValue(
         new Response(
