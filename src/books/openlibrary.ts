@@ -6,53 +6,11 @@ import type {
   BookSearchOptions,
   BookSearchResult,
 } from './typings';
-import { parseJSON } from '../common/helpers';
+import { buildUrl, upstreamFetch } from '../common/helpers';
 
 const OPENLIBRARY_BASE_URL = 'https://openlibrary.org/api/volumes/brief';
 const OPENLIBRARY_SEARCH_URL = 'https://openlibrary.org/search.json';
 const OPENLIBRARY_COVERS_URL = 'https://covers.openlibrary.org/b';
-
-type IdType = 'isbn' | 'lccn' | 'oclc' | 'olid';
-
-/**
- * Make a request to the OpenLibrary Read API
- * DOCS: https://openlibrary.org/dev/docs/api/read
- */
-const openLibraryFetch = async <T>(
-  idType: IdType,
-  idValue: string,
-): Promise<T> => {
-  try {
-    const url = `${OPENLIBRARY_BASE_URL}/${idType}/${idValue}.json`;
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (networkError) {
-      throw new Error(
-        `(openLibraryFetch): Network error requesting ${idType}/${idValue} - ${String(networkError)}`,
-      );
-    }
-
-    if (response.status !== 200) {
-      const errorResp = await response.text();
-      throw new Error(
-        `(fetch): ${response.status} - ${response.statusText} (${idType}/${idValue}) - ${errorResp}`,
-      );
-    }
-
-    return parseJSON<T>(response);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(`(openLibraryFetch): ${String(error)}`);
-  }
-};
 
 /**
  * Build cover URL from ISBN
@@ -143,30 +101,16 @@ const normalizeSearchDoc = (doc: OpenLibrarySearchDoc): BookSearchResult => ({
 export const queryBookByISBN = async (
   isbn: string,
 ): Promise<BookSearchResult | null> => {
-  try {
-    // Remove any hyphens or spaces from ISBN
-    const cleanIsbn = isbn.replace(/[-\s]/g, '');
+  // Remove any hyphens or spaces from ISBN
+  const cleanIsbn = isbn.replace(/[-\s]/g, '');
 
-    const response = await openLibraryFetch<OpenLibraryReadResponse>(
-      'isbn',
-      cleanIsbn,
-    );
+  const response = await upstreamFetch<OpenLibraryReadResponse>(
+    'OpenLibrary',
+    `${OPENLIBRARY_BASE_URL}/isbn/${encodeURIComponent(cleanIsbn)}.json`,
+  );
 
-    const record = extractFirstRecord(response);
-    if (!record) {
-      return null;
-    }
-
-    return normalizeBookData(record);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[queryBookByISBN] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[queryBookByISBN] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  const record = extractFirstRecord(response);
+  return record ? normalizeBookData(record) : null;
 };
 
 /**
@@ -182,52 +126,19 @@ export const searchBooksByTitle = async (
   title: string,
   options: BookSearchOptions = {},
 ): Promise<BookSearchResult[]> => {
-  try {
-    const url = new URL(OPENLIBRARY_SEARCH_URL);
-    url.searchParams.set('title', title);
-    url.searchParams.set('limit', String(options.limit ?? 10));
-    url.searchParams.set(
-      'fields',
+  const url = buildUrl(OPENLIBRARY_SEARCH_URL, {
+    title,
+    limit: options.limit ?? 10,
+    fields:
       'title,subtitle,author_name,first_publish_year,publish_year,cover_i,isbn,publisher,subject,language,number_of_pages_median',
-    );
+    page: options.page,
+    lang: options.language,
+  });
 
-    if (options.page) {
-      url.searchParams.set('page', String(options.page));
-    }
-    if (options.language) {
-      url.searchParams.set('lang', options.language);
-    }
+  const data = await upstreamFetch<OpenLibrarySearchResponse>(
+    'OpenLibrary',
+    url,
+  );
 
-    let response: Response;
-    try {
-      response = await fetch(url.toString(), {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (networkError) {
-      throw new Error(
-        `[searchBooksByTitle]: Network error searching for "${title}" - ${String(networkError)}`,
-      );
-    }
-
-    if (response.status !== 200) {
-      const errorResp = await response.text();
-      throw new Error(
-        `(fetch): ${response.status} - ${response.statusText} - ${errorResp}`,
-      );
-    }
-
-    const data = await parseJSON<OpenLibrarySearchResponse>(response);
-
-    return data.docs.map(normalizeSearchDoc);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`[searchBooksByTitle] - ${error.message}`);
-      throw error;
-    }
-    const err = new Error(`[searchBooksByTitle] - ${String(error)}`);
-    console.error(err.message);
-    throw err;
-  }
+  return data.docs.map(normalizeSearchDoc);
 };
