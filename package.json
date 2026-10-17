@@ -10,7 +10,7 @@
     "clean:node": "rm -rf node_modules",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev src/app.ts",
-    "dev:local": "npx tsx --env-file .env src/server.ts",
+    "dev:local": "tsx --env-file .env src/server.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint --fix \"src/**/*.ts\"",
     "test": "vitest run",
