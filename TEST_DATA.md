@@ -192,7 +192,7 @@ curl "http://localhost:8787/yt/video?url=DeGFRB0Mor8"
 
 ## MCP
 
-The MCP endpoint needs an OAuth token, so test it with an MCP client instead of `curl`. Start `pnpm dev` with `API_KEY` (and the API credentials) in `.dev.vars`, then run `npx @modelcontextprotocol/inspector`, connect to `http://localhost:8787/mcp` and sign in with the `API_KEY` password.
+The MCP endpoint needs an OAuth token, so test it with an MCP client instead of `curl`. Start `pnpm dev` with `API_KEY` (and the API credentials) in `.dev.vars`, then run `npx @modelcontextprotocol/inspector`, connect to `http://localhost:8787/mcp` and sign in with the `API_KEY` password. In Safari, run `pnpm dev:https` instead and use `https://localhost:8787/mcp` (accept the self-signed certificate at `https://localhost:8787/` first); Safari drops the sign-in cookie on plain `http://localhost`.
 
 ```sh
 # Check the OAuth discovery documents and the 401 challenge

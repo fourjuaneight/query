@@ -92,6 +92,9 @@ pnpm install
 # Start the local development server (uses Wrangler; REST, MCP and OAuth)
 pnpm dev
 
+# Same, over HTTPS on localhost (needed for MCP sign-in in Safari)
+pnpm dev:https
+
 # Or run locally with Node via tsx (REST API only, no MCP)
 pnpm dev:local
 ```
@@ -217,7 +220,7 @@ Tool parameters match the REST query parameters, except that `per_page` is `perP
 
 - **claude.ai (web, desktop and mobile):** Settings → Connectors → Add custom connector. Enter `https://<your-worker>/mcp`, then sign in with the `API_KEY` password when asked.
 - **Claude Code:** `claude mcp add --transport http query https://<your-worker>/mcp`, then run `/mcp` in Claude Code to sign in.
-- **MCP Inspector (local testing):** `npx @modelcontextprotocol/inspector`, then connect to `http://localhost:8787/mcp` (Streamable HTTP).
+- **MCP Inspector (local testing):** `npx @modelcontextprotocol/inspector`, then connect to `http://localhost:8787/mcp` (Streamable HTTP). Safari does not keep the sign-in cookie on plain `http://localhost`: in Safari, run `pnpm dev:https`, accept the self-signed certificate once at `https://localhost:8787/`, and connect to `https://localhost:8787/mcp`. Chrome and Firefox work with plain `pnpm dev`.
 
 The server works on every hostname the Worker serves (`workers.dev`, a custom domain, `localhost`). Each hostname issues its own tokens, so keep using the URL you signed in with.
 
