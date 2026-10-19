@@ -239,7 +239,7 @@ Use `pnpm run deploy`, not `pnpm deploy`: `pnpm deploy` is a built-in pnpm comma
 
 The `OAUTH_KV` binding in [`wrangler.toml`](wrangler.toml) has no `id`. On the first deploy, Wrangler creates the namespace and binds it, and later deploys reuse it. The Cloudflare API token (`CF_API_TOKEN` in CI) needs the **Workers KV Storage: Edit** permission for this. To use an existing namespace instead, add its `id` to the binding.
 
-Before deploying, make sure all required secrets are set in your Cloudflare dashboard or via the Wrangler CLI:
+CI only deploys; it does not upload secrets. Set each secret once in the Cloudflare dashboard or with the Wrangler CLI. Secrets stay in place across deploys, so run `wrangler secret put <NAME>` again only to change one:
 
 ```sh
 wrangler secret put TMDB_KEY

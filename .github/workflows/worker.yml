@@ -42,22 +42,10 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      # Deploy only. Worker secrets live in Cloudflare (set once with
+      # `wrangler secret put`, see README) and persist across deploys.
       - name: Deploy to Cloudflare Workers
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          secrets: |
-              TMDB_KEY
-              TWITCH_CLIENT_ID
-              TWITCH_CLIENT_SECRET
-              DISCOGS_TOKEN
-              GH_TOKEN
-              YOUTUBE_KEY
-        env:
-          TMDB_KEY: ${{ secrets.TMDB_KEY }}
-          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
-          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
-          DISCOGS_TOKEN: ${{ secrets.DISCOGS_TOKEN }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          YOUTUBE_KEY: ${{ secrets.YOUTUBE_KEY }}
