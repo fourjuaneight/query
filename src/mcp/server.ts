@@ -9,6 +9,7 @@ import { registerMovieTools } from '../movies/tools';
 import { registerMTGTools } from '../mtg/tools';
 import { registerMusicTools } from '../music/tools';
 import { registerPKMTools } from '../pkm/tools';
+import { registerQobuzTools } from '../qobuz/tools';
 import { registerRepoTools } from '../repos/tools';
 import { registerTVShowTools } from '../shows/tools';
 import { registerYouTubeTools } from '../yt/tools';
@@ -27,7 +28,7 @@ export const createMcpServer = (env: Bindings): McpServer => {
       // The tool list never changes, so clients need not listen for updates
       capabilities: { tools: { listChanged: false } },
       instructions:
-        'Look up books, games, manga, movies, TV shows, Magic: The Gathering and Pokémon cards, music, GitHub repositories and YouTube videos. Tool results are JSON.',
+        'Look up books, games, manga, movies, TV shows, Magic: The Gathering and Pokémon cards, music (with Qobuz store links), GitHub repositories and YouTube videos. Tool results are JSON.',
     },
   );
 
@@ -39,6 +40,7 @@ export const createMcpServer = (env: Bindings): McpServer => {
   registerMTGTools(server);
   registerPKMTools(server);
   registerMusicTools(server, env);
+  registerQobuzTools(server, env);
   registerRepoTools(server, env);
   registerYouTubeTools(server, env);
 

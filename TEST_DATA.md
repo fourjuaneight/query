@@ -139,6 +139,16 @@ curl "http://localhost:8787/music/tracks?track=Paranoid+Android"
 curl "http://localhost:8787/music/tracks?track=Lucky&artist=Daft+Punk&year=2013&page=1&per_page=5"
 ```
 
+## Qobuz
+
+```sh
+# Search albums (store links default to the US store)
+curl "http://localhost:8787/qobuz/albums?title=OK+Computer"
+
+# Narrow by artist and get UK store links
+curl "http://localhost:8787/qobuz/albums?title=Discovery&artist=Daft+Punk&store=gb-en&limit=5&offset=0"
+```
+
 ## Pokémon TCG
 
 ```sh
