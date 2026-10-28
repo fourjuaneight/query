@@ -8,6 +8,8 @@ export interface Bindings {
   DISCOGS_TOKEN: string;
   GH_TOKEN: string;
   YOUTUBE_KEY: string;
+  QOBUZ_APP_ID: string;
+  QOBUZ_USER_AUTH_TOKEN: string;
   /** Optional shared secret. When set, REST requests must send `Authorization: Bearer <API_KEY>`. It is also the MCP sign-in password; without it, MCP is off. */
   API_KEY?: string;
   /** Optional Workers Rate Limiting binding (see wrangler.toml). */

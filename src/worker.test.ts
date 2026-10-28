@@ -257,6 +257,8 @@ beforeEach(() => {
     DISCOGS_TOKEN: 'discogs',
     GH_TOKEN: 'gh',
     YOUTUBE_KEY: 'yt',
+    QOBUZ_APP_ID: 'qobuz-app',
+    QOBUZ_USER_AUTH_TOKEN: 'qobuz-token',
     API_KEY: PASSWORD,
     OAUTH_KV: createKV(),
   };
@@ -537,7 +539,7 @@ describe('Worker entry: MCP with OAuth', () => {
 
     if (pin) expect(client.getNegotiatedProtocolVersion()).toBe(pin);
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(21);
+    expect(tools).toHaveLength(22);
 
     mockFetch.mockResolvedValue(
       new Response(JSON.stringify({ numFound: 1, docs: [{ title: '1984' }] })),
@@ -556,7 +558,7 @@ describe('Worker entry: MCP with OAuth', () => {
     const { accessToken } = await signIn();
     const client = await connect(accessToken, { path: '/mcp/' });
 
-    expect((await client.listTools()).tools).toHaveLength(21);
+    expect((await client.listTools()).tools).toHaveLength(22);
     await client.close();
   });
 
@@ -593,7 +595,7 @@ describe('Worker entry: MCP with OAuth', () => {
     }>();
 
     const client = await connect(accessToken);
-    expect((await client.listTools()).tools).toHaveLength(21);
+    expect((await client.listTools()).tools).toHaveLength(22);
     await client.close();
   });
 

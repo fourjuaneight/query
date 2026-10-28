@@ -48,6 +48,7 @@ Links to the upstream API documentation for every integrated service:
 | TMDB (Movies & TV) | [API Docs](https://developer.themoviedb.org/docs) |
 | Scryfall (MTG) | [API Reference](https://scryfall.com/docs/api) · [Search Syntax](https://scryfall.com/docs/syntax) |
 | Discogs (Music) | [API Docs](https://www.discogs.com/developers) |
+| Qobuz (Albums) | No official public docs. See the community [OpenAPI profile](https://github.com/api-evangelist/qobuz) and [streamrip](https://github.com/nathom/streamrip) |
 | TCGdex (Pokémon TCG) | [API Reference](https://tcgdex.dev/reference/card) |
 | GitHub (Repos) | [REST API](https://docs.github.com/en/rest) |
 | YouTube | [Data API v3](https://developers.google.com/youtube/v3/docs) |
@@ -64,8 +65,19 @@ The following environment variables must be set. Configure them as [Wrangler sec
 | `DISCOGS_TOKEN` | Discogs (Music) | [Discogs Developer Settings](https://www.discogs.com/settings/developers) |
 | `GH_TOKEN` | GitHub (Repos) | [GitHub Personal Access Tokens](https://github.com/settings/tokens) |
 | `YOUTUBE_KEY` | YouTube | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
+| `QOBUZ_APP_ID` | Qobuz | The web player's app ID (see [Qobuz credentials](#qobuz-credentials)) |
+| `QOBUZ_USER_AUTH_TOKEN` | Qobuz | Your account's user auth token (see [Qobuz credentials](#qobuz-credentials)) |
 
 > **Note:** OpenLibrary, MangaDex, Scryfall, and TCGdex do not require authentication tokens.
+
+### Qobuz credentials
+
+Qobuz has no public API. Query uses the same private API (`https://www.qobuz.com/api.json/0.2`) as the Qobuz web player, with the same credentials as [streamrip](https://github.com/nathom/streamrip):
+
+- **`QOBUZ_APP_ID`:** the 9-digit app ID of the web player. streamrip finds it in the player's `bundle.js` and saves it as `app_id` in its `config.toml`. Copy it from there, or open [play.qobuz.com](https://play.qobuz.com), and in the browser's developer tools find the `X-App-Id` header (or `app_id` parameter) on any request to `api.json`.
+- **`QOBUZ_USER_AUTH_TOKEN`:** sign in at [play.qobuz.com](https://play.qobuz.com) and copy the `X-User-Auth-Token` request header from the same requests (streamrip's "token" login uses this value).
+
+Album search sends both values. Qobuz can change its app ID or end a token at any time; Query then answers `502` and logs the Qobuz error. Update the secrets to fix this.
 
 ### Access control
 
@@ -151,6 +163,12 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 | `/music/albums` | `title` (required), `artist`, `year`, `genre`, `page`, `per_page` (max 100) | Search albums |
 | `/music/tracks` | `track` (required), `artist`, `year`, `genre`, `page`, `per_page` (max 100) | Search tracks |
 
+### Qobuz
+
+| Endpoint | Parameters | Description |
+|---|---|---|
+| `/qobuz/albums` | `title` (required), `artist`, `store` (default `us-en`), `limit` (default 10, max 50), `offset` | Search Qobuz albums. Each result has a `storeUrl` (store page for the `store` region, e.g. `gb-en`, `fr-fr`) and a `playerUrl` (`open.qobuz.com`) |
+
 ### Pokémon TCG
 
 | Endpoint | Parameters | Description |
@@ -199,7 +217,7 @@ The Worker is also a remote [Model Context Protocol](https://modelcontextprotoco
 
 - **Transport:** Streamable HTTP, stateless. It serves the `2026-07-28` protocol and falls back to `2025-*` clients ([`@modelcontextprotocol/server`](https://www.npmjs.com/package/@modelcontextprotocol/server)).
 - **Auth:** OAuth 2.1 with PKCE ([`@cloudflare/workers-oauth-provider`](https://github.com/cloudflare/workers-oauth-provider)). Clients register with Client ID Metadata Documents or Dynamic Client Registration. The `/authorize` consent page asks for the owner password, which is the `API_KEY` secret.
-- **Tools:** 21 read-only tools, one per REST route. Results are JSON text. Errors come back as tool errors. Not-found and upstream errors use the same messages as the REST API. Invalid arguments return the MCP SDK's validation message.
+- **Tools:** 22 read-only tools, one per REST route. Results are JSON text. Errors come back as tool errors. Not-found and upstream errors use the same messages as the REST API. Invalid arguments return the MCP SDK's validation message.
 
 | Tool | REST route |
 |---|---|
@@ -211,6 +229,7 @@ The Worker is also a remote [Model Context Protocol](https://modelcontextprotoco
 | `get_mtg_card` | `/mtg/cards` |
 | `get_pokemon_card` | `/pkm/cards` |
 | `search_music_artists`, `search_music_albums`, `search_music_tracks` | `/music/artists`, `/music/albums`, `/music/tracks` |
+| `search_qobuz_albums` | `/qobuz/albums` |
 | `search_repos`, `get_repo` | `/repos/search`, `/repos/query` |
 | `get_youtube_video` | `/yt/video` |
 
@@ -248,6 +267,8 @@ wrangler secret put TWITCH_CLIENT_SECRET
 wrangler secret put DISCOGS_TOKEN
 wrangler secret put GH_TOKEN
 wrangler secret put YOUTUBE_KEY
+wrangler secret put QOBUZ_APP_ID
+wrangler secret put QOBUZ_USER_AUTH_TOKEN
 
 # Bearer token for the REST API and owner password for MCP sign-in
 wrangler secret put API_KEY
@@ -291,6 +312,7 @@ All handler tests use Hono's built-in `app.request()` helper to exercise routes 
 | `src/movies/handler.test.ts` | Query, search, by-ID, language/year options, `details=false`, 404, error paths, no-director/no-poster edge cases |
 | `src/mtg/handler.test.ts` | Card search, set/number filters, request headers, no-match (404) and rejected-query (400) responses, double-faced cards, colorless cards, newline escaping |
 | `src/music/handler.test.ts` | Artist, album, and track search, pagination/filter options, error paths |
+| `src/qobuz/handler.test.ts` | Album search, store and player links, `store` region, slug and URL fallbacks, artist/limit/offset options, credentials in the request, param validation, error paths, minimal album edge case |
 | `src/pkm/handler.test.ts` | Card search, set filter, limit/page, empty results, error paths, minimal card edge case, effect-as-description |
 | `src/repos/handler.test.ts` | Search, query, `owner/repo` lookup, best-match ranking, `totalPages`, param validation, 404, error paths, no-license/no-description edge case |
 | `src/shows/handler.test.ts` | Query, search, by-ID, language/year options, 404, error paths, no-poster edge case |

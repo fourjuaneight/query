@@ -12,6 +12,8 @@ const env: Bindings = {
   DISCOGS_TOKEN: process.env['DISCOGS_TOKEN'] ?? '',
   GH_TOKEN: process.env['GH_TOKEN'] ?? '',
   YOUTUBE_KEY: process.env['YOUTUBE_KEY'] ?? '',
+  QOBUZ_APP_ID: process.env['QOBUZ_APP_ID'] ?? '',
+  QOBUZ_USER_AUTH_TOKEN: process.env['QOBUZ_USER_AUTH_TOKEN'] ?? '',
   API_KEY: process.env['API_KEY'],
 };
 
