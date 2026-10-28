@@ -29,6 +29,7 @@ import {
   handleTrackSearch,
 } from './music/handler';
 import { handlePKMCard } from './pkm/handler';
+import { handleQobuzAlbumSearch } from './qobuz/handler';
 import { handleRepoSearch, handleRepoQuery } from './repos/handler';
 import {
   handleTVShowQuery,
@@ -107,6 +108,9 @@ app.get('/music/tracks', handleTrackSearch);
 
 // --- Pokémon TCG ---
 app.get('/pkm/cards', handlePKMCard);
+
+// --- Qobuz ---
+app.get('/qobuz/albums', handleQobuzAlbumSearch);
 
 // --- Repos ---
 app.get('/repos/search', handleRepoSearch);

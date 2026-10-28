@@ -16,6 +16,8 @@ const env: Bindings = {
   DISCOGS_TOKEN: 'discogs',
   GH_TOKEN: 'gh',
   YOUTUBE_KEY: 'yt',
+  QOBUZ_APP_ID: 'qobuz-app',
+  QOBUZ_USER_AUTH_TOKEN: 'qobuz-token',
 };
 
 let client: Client;
@@ -69,6 +71,7 @@ const toolCases: [string, string, Record<string, unknown>][] = [
   ['search_music_artists', 'Discogs', { name: 'Rush' }],
   ['search_music_albums', 'Discogs', { title: 'Moving Pictures' }],
   ['search_music_tracks', 'Discogs', { track: 'Tom Sawyer' }],
+  ['search_qobuz_albums', 'Qobuz', { title: 'OK Computer' }],
   ['search_repos', 'GitHub', { query: 'hono' }],
   ['get_repo', 'GitHub', { name: 'honojs/hono' }],
   ['get_youtube_video', 'YouTube', { url: 'https://youtu.be/dQw4w9WgXcQ' }],
@@ -169,6 +172,8 @@ describe('MCP server', () => {
     ['find_movie', { title: 'Alien', year: 1700 }],
     ['get_pokemon_card', { name: 'Pikachu', limit: 41 }],
     ['search_repos', { query: 'hono', sort: 'popular' }],
+    ['search_qobuz_albums', { title: 'OK Computer', store: 'usa' }],
+    ['search_qobuz_albums', { title: 'OK Computer', limit: 51 }],
   ])('%s rejects invalid input %j', async (name, args) => {
     const result = await call(name, args);
 
@@ -232,6 +237,11 @@ describe('MCP server', () => {
         per_page: '5',
         page: '2',
       },
+    ],
+    [
+      'search_qobuz_albums',
+      { title: 'OK Computer', artist: 'Radiohead', limit: 5, offset: 10 },
+      { query: 'OK Computer Radiohead', limit: '5', offset: '10' },
     ],
     [
       'search_music_tracks',
