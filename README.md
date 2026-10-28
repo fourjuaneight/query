@@ -167,7 +167,7 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/qobuz/albums` | `title` (required), `artist`, `store` (default `us-en`), `limit` (default 10, max 50), `offset` | Search Qobuz albums. Each result has a `storeUrl` (store page for the `store` region, e.g. `gb-en`, `fr-fr`) and a `playerUrl` (`open.qobuz.com`) |
+| `/qobuz/albums` | `title` (required), `artist`, `store` (default `us-en`), `limit` (default 10, max 25), `offset`, `tracks` | Search Qobuz albums. Each result has a `storeUrl` (store page for the `store` region, e.g. `gb-en`, `fr-fr`), a `playerUrl` (`open.qobuz.com`), a `trackCount` and a `tracks` list (disc, number, title, version, artist, duration in seconds, ISRC). Each track list is one more Qobuz request; `tracks=false` skips them (`tracks` is `null`) |
 
 ### Pokémon TCG
 
@@ -312,7 +312,7 @@ All handler tests use Hono's built-in `app.request()` helper to exercise routes 
 | `src/movies/handler.test.ts` | Query, search, by-ID, language/year options, `details=false`, 404, error paths, no-director/no-poster edge cases |
 | `src/mtg/handler.test.ts` | Card search, set/number filters, request headers, no-match (404) and rejected-query (400) responses, double-faced cards, colorless cards, newline escaping |
 | `src/music/handler.test.ts` | Artist, album, and track search, pagination/filter options, error paths |
-| `src/qobuz/handler.test.ts` | Album search, store and player links, `store` region, slug and URL fallbacks, artist/limit/offset options, credentials in the request, param validation, error paths, minimal album edge case |
+| `src/qobuz/handler.test.ts` | Album search, store and player links, track lists (one request per album, `tracks=false`, minimal tracks), `store` region, slug and URL fallbacks, artist/limit/offset options, credentials in the request, param validation, error paths, minimal album edge case |
 | `src/pkm/handler.test.ts` | Card search, set filter, limit/page, empty results, error paths, minimal card edge case, effect-as-description |
 | `src/repos/handler.test.ts` | Search, query, `owner/repo` lookup, best-match ranking, `totalPages`, param validation, 404, error paths, no-license/no-description edge case |
 | `src/shows/handler.test.ts` | Query, search, by-ID, language/year options, 404, error paths, no-poster edge case |

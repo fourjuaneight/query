@@ -24,6 +24,27 @@ export interface QobuzAlbum {
   image?: QobuzImage;
 }
 
+export interface QobuzTrack {
+  id: number;
+  title: string;
+  version?: string | null;
+  track_number?: number;
+  media_number?: number;
+  duration?: number;
+  isrc?: string;
+  performer?: { id: number; name: string };
+}
+
+/** album/get: the album with its track list */
+export interface QobuzAlbumDetails extends QobuzAlbum {
+  tracks?: {
+    limit: number;
+    offset: number;
+    total: number;
+    items: QobuzTrack[];
+  };
+}
+
 export interface QobuzAlbumSearchResponse {
   query: string;
   albums: {
@@ -47,6 +68,19 @@ export interface QobuzSearchOptions {
   store?: string;
   limit?: number;
   offset?: number;
+  /** Fetch the track list of every result (default true) */
+  tracks?: boolean;
+}
+
+export interface QobuzTrackResult {
+  disc: number | null;
+  number: number | null;
+  title: string;
+  version: string | null;
+  artist: string | null;
+  /** Length in seconds */
+  duration: number | null;
+  isrc: string | null;
 }
 
 export interface QobuzAlbumResult {
@@ -58,7 +92,9 @@ export interface QobuzAlbumResult {
   label: string | null;
   genre: string | null;
   upc: string | null;
-  tracks: number | null;
+  trackCount: number | null;
+  /** Null when the search skips track lists (`tracks: false`) */
+  tracks: QobuzTrackResult[] | null;
   hiRes: boolean;
   purchasable: boolean;
   streamable: boolean;

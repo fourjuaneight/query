@@ -3,8 +3,13 @@ import type { Context } from 'hono';
 import type { AppEnv, Bindings } from '../common/typings';
 import type { QobuzCredentials } from './typings';
 import { jsonError, jsonSuccess } from '../common/helpers';
-import { intQuery, optionalQuery, requireQuery } from '../common/params';
-import { STORE, searchAlbums } from './qobuz';
+import {
+  boolQuery,
+  intQuery,
+  optionalQuery,
+  requireQuery,
+} from '../common/params';
+import { MAX_LIMIT, STORE, searchAlbums } from './qobuz';
 
 export const qobuzCredentials = (env: Bindings): QobuzCredentials => ({
   appId: env.QOBUZ_APP_ID,
@@ -26,8 +31,9 @@ export const handleQobuzAlbumSearch = async (
   const results = await searchAlbums(qobuzCredentials(ctx.env), title, {
     artist: optionalQuery(ctx, 'artist'),
     store,
-    limit: intQuery(ctx, 'limit', { max: 50 }),
+    limit: intQuery(ctx, 'limit', { max: MAX_LIMIT }),
     offset: intQuery(ctx, 'offset', { min: 0, max: 10000 }),
+    tracks: boolQuery(ctx, 'tracks'),
   });
   return jsonSuccess(ctx, results);
 };

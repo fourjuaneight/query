@@ -173,7 +173,8 @@ describe('MCP server', () => {
     ['get_pokemon_card', { name: 'Pikachu', limit: 41 }],
     ['search_repos', { query: 'hono', sort: 'popular' }],
     ['search_qobuz_albums', { title: 'OK Computer', store: 'usa' }],
-    ['search_qobuz_albums', { title: 'OK Computer', limit: 51 }],
+    ['search_qobuz_albums', { title: 'OK Computer', limit: 26 }],
+    ['search_qobuz_albums', { title: 'OK Computer', tracks: 'no' }],
   ])('%s rejects invalid input %j', async (name, args) => {
     const result = await call(name, args);
 
@@ -323,6 +324,32 @@ describe('MCP server', () => {
     });
     // One search and one genre list, no per-movie details
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('search_qobuz_albums skips track lists with tracks: false', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        query: 'OK Computer',
+        albums: {
+          limit: 10,
+          offset: 0,
+          total: 1,
+          items: [{ id: '0634904078164', title: 'OK Computer' }],
+        },
+      }),
+    );
+
+    const result = await call('search_qobuz_albums', {
+      title: 'OK Computer',
+      tracks: false,
+    });
+
+    expect(result.isError).toBeFalsy();
+    const { results } = JSON.parse(textOf(result)) as {
+      results: { tracks: unknown }[];
+    };
+    expect(results[0]?.tracks).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   // ── IDs for the get_* tools ────────────────────────────────────────────────

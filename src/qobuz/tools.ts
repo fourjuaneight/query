@@ -4,7 +4,7 @@ import * as z from 'zod';
 import type { Bindings } from '../common/typings';
 import { READ_ONLY, int, optionalText, runTool, text } from '../mcp/helpers';
 import { qobuzCredentials } from './handler';
-import { STORE, searchAlbums } from './qobuz';
+import { MAX_LIMIT, STORE, searchAlbums } from './qobuz';
 
 export const registerQobuzTools = (server: McpServer, env: Bindings): void => {
   server.registerTool(
@@ -12,7 +12,7 @@ export const registerQobuzTools = (server: McpServer, env: Bindings): void => {
     {
       title: 'Search Qobuz albums',
       description:
-        'Search the Qobuz catalog for albums by title. Returns matching albums with their Qobuz store URL (`storeUrl`) and player URL (`playerUrl`).',
+        'Search the Qobuz catalog for albums by title. Returns matching albums with their Qobuz store URL (`storeUrl`), player URL (`playerUrl`) and track list (`tracks`).',
       inputSchema: z.object({
         title: text('Album title'),
         artist: optionalText('Artist name to narrow the search'),
@@ -25,11 +25,17 @@ export const registerQobuzTools = (server: McpServer, env: Bindings): void => {
           .describe(
             'Store region and language for store URLs (default "us-en", e.g. "gb-en", "fr-fr")',
           ),
-        limit: int('Maximum number of results (default 10)', { max: 50 }),
+        limit: int('Maximum number of results (default 10)', {
+          max: MAX_LIMIT,
+        }),
         offset: int('Number of results to skip (default 0)', {
           min: 0,
           max: 10000,
         }),
+        tracks: z
+          .boolean()
+          .optional()
+          .describe('Fetch the track list of every album (default true)'),
       }),
       annotations: READ_ONLY,
     },

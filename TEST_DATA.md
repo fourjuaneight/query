@@ -147,6 +147,9 @@ curl "http://localhost:8787/qobuz/albums?title=OK+Computer"
 
 # Narrow by artist and get UK store links
 curl "http://localhost:8787/qobuz/albums?title=Discovery&artist=Daft+Punk&store=gb-en&limit=5&offset=0"
+
+# Store links only, without track lists (one request instead of one per album)
+curl "http://localhost:8787/qobuz/albums?title=OK+Computer&tracks=false"
 ```
 
 ## Pokémon TCG

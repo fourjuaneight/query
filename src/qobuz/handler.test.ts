@@ -53,15 +53,47 @@ const okComputer = {
   },
 };
 
+const airbag = {
+  id: 1,
+  title: 'Airbag',
+  version: 'Remastered',
+  track_number: 1,
+  media_number: 1,
+  duration: 287,
+  isrc: 'GBAYE9700001',
+  performer: { id: 38619, name: 'Radiohead' },
+};
+
 const ok = (body: unknown): Response =>
   new Response(JSON.stringify(body), { status: 200 });
 
-const requestUrl = (): URL => new URL(String(mockFetch.mock.calls[0]?.[0]));
+/**
+ * Answer album/search with `search`, and album/get with the tracks listed
+ * for that album ID (none when it is not listed)
+ */
+const mockQobuz = (
+  search: Record<string, unknown>,
+  tracks: Record<string, unknown[]> = {},
+): void => {
+  mockFetch.mockImplementation((url: string) => {
+    const { pathname, searchParams } = new URL(url);
+    if (pathname.endsWith('/album/get')) {
+      const items = tracks[searchParams.get('album_id') ?? ''] ?? [];
+      return Promise.resolve(
+        ok({ tracks: { limit: 1200, offset: 0, total: items.length, items } }),
+      );
+    }
+    return Promise.resolve(ok(search));
+  });
+};
+
+const requestUrl = (index = 0): URL =>
+  new URL(String(mockFetch.mock.calls[index]?.[0]));
 
 describe('Qobuz handlers', () => {
   describe('GET /qobuz/albums', () => {
-    it('returns albums with store and player links', async () => {
-      mockFetch.mockResolvedValue(ok(searchResponse([okComputer])));
+    it('returns albums with store links and track lists', async () => {
+      mockQobuz(searchResponse([okComputer]), { [okComputer.id]: [airbag] });
 
       const res = await app.request('/qobuz/albums?title=OK+Computer', {}, env);
       expect(res.status).toBe(200);
@@ -79,7 +111,18 @@ describe('Qobuz handlers', () => {
             label: 'XL Recordings',
             genre: 'Alternative & Indie',
             upc: '0634904078164',
-            tracks: 12,
+            trackCount: 12,
+            tracks: [
+              {
+                disc: 1,
+                number: 1,
+                title: 'Airbag',
+                version: 'Remastered',
+                artist: 'Radiohead',
+                duration: 287,
+                isrc: 'GBAYE9700001',
+              },
+            ],
             hiRes: true,
             purchasable: true,
             streamable: true,
@@ -96,24 +139,96 @@ describe('Qobuz handlers', () => {
       });
     });
 
-    it('sends the app ID and user auth token', async () => {
-      mockFetch.mockResolvedValue(ok(searchResponse([])));
+    it('sends the app ID and user auth token on every request', async () => {
+      mockQobuz(searchResponse([okComputer]));
 
       await app.request('/qobuz/albums?title=OK+Computer', {}, env);
 
-      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(new URL(url).pathname).toBe('/api.json/0.2/album/search');
-      expect(new URL(url).searchParams.get('app_id')).toBe('123456789');
-      expect(init.headers).toEqual({
-        'X-App-Id': '123456789',
-        'X-User-Auth-Token': 'test-token',
+      const calls = mockFetch.mock.calls as [string, RequestInit][];
+      expect(calls.map(([url]) => new URL(url).pathname)).toEqual([
+        '/api.json/0.2/album/search',
+        '/api.json/0.2/album/get',
+      ]);
+      for (const [url, init] of calls) {
+        expect(new URL(url).searchParams.get('app_id')).toBe('123456789');
+        expect(init.headers).toEqual({
+          'X-App-Id': '123456789',
+          'X-User-Auth-Token': 'test-token',
+        });
+      }
+      expect(requestUrl(1).searchParams.get('album_id')).toBe(okComputer.id);
+    });
+
+    it('fetches one track list per album', async () => {
+      const other = { ...okComputer, id: 'other', slug: 'other' };
+      mockQobuz(searchResponse([okComputer, other]), {
+        [okComputer.id]: [airbag],
+        other: [{ ...airbag, title: 'Other' }],
       });
+
+      const res = await app.request('/qobuz/albums?title=OK+Computer', {}, env);
+
+      const body = await res.json<ApiBody>();
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(body.data.results[0].tracks[0].title).toBe('Airbag');
+      expect(body.data.results[1].tracks[0].title).toBe('Other');
+    });
+
+    it.each(['false', '0'])('skips track lists with tracks=%s', async value => {
+      mockQobuz(searchResponse([okComputer]));
+
+      const res = await app.request(
+        `/qobuz/albums?title=OK+Computer&tracks=${value}`,
+        {},
+        env,
+      );
+
+      const body = await res.json<ApiBody>();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(body.data.results[0].tracks).toBeNull();
+      expect(body.data.results[0].trackCount).toBe(12);
+    });
+
+    it('handles minimal tracks and albums without a track list', async () => {
+      mockQobuz(searchResponse([okComputer]), {
+        [okComputer.id]: [{ id: 2, title: 'Untitled' }],
+      });
+
+      const res = await app.request('/qobuz/albums?title=OK+Computer', {}, env);
+
+      const body = await res.json<ApiBody>();
+      expect(body.data.results[0].tracks).toEqual([
+        {
+          disc: null,
+          number: null,
+          title: 'Untitled',
+          version: null,
+          artist: null,
+          duration: null,
+          isrc: null,
+        },
+      ]);
+
+      mockFetch.mockReset();
+      mockFetch.mockImplementation((url: string) =>
+        Promise.resolve(
+          ok(
+            url.includes('/album/get')
+              ? { id: okComputer.id }
+              : searchResponse([okComputer]),
+          ),
+        ),
+      );
+      const bare = await app.request(
+        '/qobuz/albums?title=OK+Computer&store=fr-fr',
+        {},
+        env,
+      );
+      expect((await bare.json<ApiBody>()).data.results[0].tracks).toEqual([]);
     });
 
     it('passes artist, limit and offset options', async () => {
-      mockFetch.mockResolvedValue(
-        ok(searchResponse([], { limit: 5, offset: 10 })),
-      );
+      mockQobuz(searchResponse([], { limit: 5, offset: 10 }));
 
       const res = await app.request(
         '/qobuz/albums?title=OK+Computer&artist=Radiohead&limit=5&offset=10',
@@ -129,7 +244,7 @@ describe('Qobuz handlers', () => {
     });
 
     it('builds store links for the requested store', async () => {
-      mockFetch.mockResolvedValue(ok(searchResponse([okComputer])));
+      mockQobuz(searchResponse([okComputer]));
 
       const res = await app.request(
         '/qobuz/albums?title=OK+Computer&store=GB-en',
@@ -146,7 +261,7 @@ describe('Qobuz handlers', () => {
     it('falls back to the API URL, then null, without a slug', async () => {
       const noSlug = { ...okComputer, slug: undefined };
       const noUrl = { ...noSlug, url: undefined };
-      mockFetch.mockResolvedValue(ok(searchResponse([noSlug, noUrl])));
+      mockQobuz(searchResponse([noSlug, noUrl]));
 
       const res = await app.request('/qobuz/albums?title=OK+Computer', {}, env);
 
@@ -159,9 +274,7 @@ describe('Qobuz handlers', () => {
     });
 
     it('handles minimal albums', async () => {
-      mockFetch.mockResolvedValue(
-        ok(searchResponse([{ id: 'abc123', title: 'Untitled' }])),
-      );
+      mockQobuz(searchResponse([{ id: 'abc123', title: 'Untitled' }]));
 
       const res = await app.request('/qobuz/albums?title=Untitled', {}, env);
 
@@ -172,7 +285,8 @@ describe('Qobuz handlers', () => {
         releaseDate: null,
         label: null,
         upc: null,
-        tracks: null,
+        trackCount: null,
+        tracks: [],
         hiRes: false,
         coverUrl: null,
         storeUrl: null,
@@ -198,13 +312,24 @@ describe('Qobuz handlers', () => {
       },
     );
 
-    it('returns 400 when limit is above 50', async () => {
+    it('returns 400 when limit is above 25', async () => {
       const res = await app.request(
-        '/qobuz/albums?title=OK+Computer&limit=51',
+        '/qobuz/albums?title=OK+Computer&limit=26',
         {},
         env,
       );
       expect(res.status).toBe(400);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for an invalid tracks value', async () => {
+      const res = await app.request(
+        '/qobuz/albums?title=OK+Computer&tracks=maybe',
+        {},
+        env,
+      );
+      expect(res.status).toBe(400);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('returns 502 when the API call fails', async () => {
@@ -221,6 +346,19 @@ describe('Qobuz handlers', () => {
       const body = await res.json<ApiBody>();
       expect(body.success).toBe(false);
       expect(body.error).toBe('Qobuz: upstream request failed');
+    });
+
+    it('returns 502 when a track list request fails', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        Promise.resolve(
+          url.includes('/album/get')
+            ? new Response('Server Error', { status: 500 })
+            : ok(searchResponse([okComputer])),
+        ),
+      );
+
+      const res = await app.request('/qobuz/albums?title=OK+Computer', {}, env);
+      expect(res.status).toBe(502);
     });
   });
 });
