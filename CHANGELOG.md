@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-10-28
+
+### Features
+
+- [Return track lists from Qobuz album search.](https://github.com/fourjuaneight/query/commit/8d9d326ddf14551258fa7bfd659d83e94ec5629b)
+
+### Miscellaneous Tasks
+
+- [Update Changelog.](https://github.com/fourjuaneight/query/commit/edef8b7314351e37f7af3f70d20358aadc20a53a)
+
 ## [2.1.0] - 2026-10-28
 
 ### Bug Fixes
