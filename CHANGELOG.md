@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [2.1.0] - 2026-10-28
 
 ### Bug Fixes
 
@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - [Replace deprecated set-output and outdated actions in the changelog workflow.](https://github.com/fourjuaneight/query/commit/809044a76331eb63531bd8254d2c8dbaa6003ca8)
 - [Replace the archived setup-git-cliff action with git-cliff-action.](https://github.com/fourjuaneight/query/commit/16b290563dec7424c100effd88fdd663bf720246)
 - [Update GitHub Actions off the removed Node 20 runtime.](https://github.com/fourjuaneight/query/commit/7a6b0e6f6a5d6ffd18fc0acd83c86273555f5f61)
+- [Harden the MCP server and OAuth sign-in after review.](https://github.com/fourjuaneight/query/commit/6f01e1863425c9e8a98c7a52e89498fec193dd9f)
 
 ### Documentation
 
@@ -40,6 +41,9 @@ All notable changes to this project will be documented in this file.
 - [Document new query params and limits in the route reference.](https://github.com/fourjuaneight/query/commit/8ac799018818c1061b14e805ab584b431c07685d)
 - [Update prerequisites and testing notes.](https://github.com/fourjuaneight/query/commit/17c576119644b27703441ff9bd7d24eab86e676b)
 - [Add examples for new query params to the test data sheet.](https://github.com/fourjuaneight/query/commit/0954016106b26505a1f968393fc05949251b95a3)
+- [Document the MCP server, OAuth setup and tool list.](https://github.com/fourjuaneight/query/commit/61d476b225fa5f81777f3f576900e82f8efd5146)
+- [Update MCP setup, deploy and access-control notes.](https://github.com/fourjuaneight/query/commit/7f55a704abd3d0662bf2d583463b723d1471610b)
+- [Add an HTTPS dev script for MCP sign-in in Safari.](https://github.com/fourjuaneight/query/commit/284bb44b9a67980f47ba85bb36435fdb6cb306a3)
 
 ### Features
 
@@ -50,6 +54,8 @@ All notable changes to this project will be documented in this file.
 - [Add totalPages to repo search results.](https://github.com/fourjuaneight/query/commit/58ee21f7519f5857f5e2d2ea096372966a430443)
 - [Add optional bearer token auth via the API_KEY secret.](https://github.com/fourjuaneight/query/commit/800981f79b8ced5656693fa15750e9add3750e6a)
 - [Add per-IP rate limiting with the Workers Rate Limiting binding.](https://github.com/fourjuaneight/query/commit/907fbc02f1fbc909b1d42f359472e0696dd5c178)
+- [Add a remote MCP server with OAuth sign-in.](https://github.com/fourjuaneight/query/commit/a4fc0d5971d26878a44aa38d786174d62a8dcd78)
+- [Add Qobuz album search with store links.](https://github.com/fourjuaneight/query/commit/127cb1f1e7ef4393cd37bd5ad94c186d579debec)
 
 ### Miscellaneous Tasks
 
@@ -72,6 +78,10 @@ All notable changes to this project will be documented in this file.
 - [Update Workers compatibility date to 2026-10-12.](https://github.com/fourjuaneight/query/commit/fc37258831a0cdffdcc9ab96279c60a39c81a911)
 - [Add a concurrency group to the worker workflow.](https://github.com/fourjuaneight/query/commit/a93cb40b55a1a57b31243e1237be2d99f846d787)
 - [Add a typecheck step to CI.](https://github.com/fourjuaneight/query/commit/35f0310a88762a4464c05e55e8a35f4e77078f4b)
+- [Update Changelog.](https://github.com/fourjuaneight/query/commit/93aa5ba2fb0cd5ea3e0f36b3e5a8f00d52a90dd5)
+- [Deny the OAuth provider's bundled agent skill in pnpm.](https://github.com/fourjuaneight/query/commit/d8e73d651f5339c23af624a6db1e9f51857b0046)
+- [Add additional logging to wrangler.](https://github.com/fourjuaneight/query/commit/487c3d1635a341f543dde60f8f58378674823ece)
+- [Update cloudflare token name.](https://github.com/fourjuaneight/query/commit/0600b8cfa0224a86c27c4ec4fc8288b1db37975d)
 
 ### Performance
 
@@ -84,6 +94,10 @@ All notable changes to this project will be documented in this file.
 ### Testing
 
 - [Type JSON response bodies in tests.](https://github.com/fourjuaneight/query/commit/e15eb4b4330da79709c24f94365de7f76e794c95)
+
+### Ci
+
+- [Stop uploading secrets on every deploy.](https://github.com/fourjuaneight/query/commit/b6e39fdb9b3c7f725f505a6d7b2ac0ebfa57e281)
 
 ## [1.0.0] - 2026-02-25
 
