@@ -256,7 +256,7 @@ pnpm run deploy
 
 Use `pnpm run deploy`, not `pnpm deploy`: `pnpm deploy` is a built-in pnpm command. The CI workflow ([`.github/workflows/worker.yml`](.github/workflows/worker.yml)) also deploys on every push to `main`.
 
-The `OAUTH_KV` binding in [`wrangler.toml`](wrangler.toml) has no `id`. On the first deploy, Wrangler creates the namespace and binds it, and later deploys reuse it. The Cloudflare API token (`CF_API_TOKEN` in CI) needs the **Workers KV Storage: Edit** permission for this. To use an existing namespace instead, add its `id` to the binding.
+The `OAUTH_KV` binding in [`wrangler.toml`](wrangler.toml) has no `id`. On the first deploy, Wrangler creates the namespace and binds it, and later deploys reuse it. The Cloudflare API token (`CLOUDFLARE_API_TOKEN` in CI) needs the **Workers KV Storage: Edit** permission for this. To use an existing namespace instead, add its `id` to the binding.
 
 CI only deploys; it does not upload secrets. Set each secret once in the Cloudflare dashboard or with the Wrangler CLI. Secrets stay in place across deploys, so run `wrangler secret put <NAME>` again only to change one:
 
