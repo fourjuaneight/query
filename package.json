@@ -1,6 +1,6 @@
 {
   "name": "query",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Wrappers around frequently used 3rd-party APIs.",
   "type": "module",
   "scripts": {
