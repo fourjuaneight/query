@@ -19,7 +19,9 @@ import {
 const perPage = (max: number): z.ZodOptional<z.ZodNumber> =>
   int('Results per page (default 10)', { max });
 
-const artist = optionalText('Artist name to filter by');
+const artist = optionalText(
+  'Artist name. Only results by this artist are kept, so a page can have fewer results than perPage',
+);
 
 export const registerMusicTools = (server: McpServer): void => {
   server.registerTool(

@@ -268,22 +268,66 @@ describe('Music handlers', () => {
       });
     });
 
-    it('searches by artist with quoted advanced-search fields', async () => {
+    it('searches by artist with a plain query', async () => {
       mockDeezer(page([]));
 
       const res = await app.request(
-        '/music/albums?title=OK+%22Computer%22&artist=Radiohead&page=2&per_page=5',
+        '/music/albums?title=OK+Computer&artist=Radiohead&page=2&per_page=5',
         {},
         env,
       );
       expect(res.status).toBe(200);
 
       const url = requestUrl();
-      expect(url.searchParams.get('q')).toBe(
-        'artist:"Radiohead" album:"OK Computer"',
-      );
+      expect(url.searchParams.get('q')).toBe('OK Computer Radiohead');
       expect(url.searchParams.get('index')).toBe('5');
       expect(url.searchParams.get('limit')).toBe('5');
+    });
+
+    it('keeps only albums by the artist, and fetches details only for them', async () => {
+      const cover = {
+        ...okComputer,
+        id: 2,
+        title: 'OK Computer (String Quartet)',
+        artist: { id: 7, name: 'Vitamin String Quartet' },
+      };
+      const remix = {
+        ...okComputer,
+        id: 3,
+        artist: { id: 8, name: 'RADIOHEAD  feat. Someone' },
+      };
+      mockDeezer(
+        page(
+          [
+            okComputer,
+            cover,
+            remix,
+            { ...okComputer, id: 4, artist: undefined },
+          ],
+          40,
+        ),
+      );
+
+      const res = await app.request(
+        '/music/albums?title=OK+Computer&artist=radiohead',
+        {},
+        env,
+      );
+
+      const body = await res.json<ApiBody>();
+      expect(
+        (body.data.results as { id: number }[]).map(album => album.id),
+      ).toEqual([6575789, 3]);
+      // Totals are Deezer's, before the artist filter
+      expect(body.data.totalResults).toBe(40);
+      // One search and two album details
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(
+        mockFetch.mock.calls
+          .slice(1)
+          .map(([url]) => new URL(String(url)).pathname)
+          .sort(),
+      ).toEqual(['/album/3', '/album/6575789']);
     });
 
     it('handles minimal albums and details', async () => {
@@ -389,16 +433,44 @@ describe('Music handlers', () => {
       expect(requestUrl().pathname).toBe('/search/track');
     });
 
-    it('searches by artist and handles minimal tracks', async () => {
+    it('keeps only tracks by the artist, ignoring case and accents', async () => {
+      mockDeezer(
+        page([
+          {
+            id: 1,
+            title: 'Lucky',
+            link: 'https://x/1',
+            artist: { id: 1, name: 'Beyoncé' },
+          },
+          {
+            id: 2,
+            title: 'Lucky',
+            link: 'https://x/2',
+            artist: { id: 2, name: 'Britney Spears' },
+          },
+        ]),
+      );
+
+      const res = await app.request(
+        '/music/tracks?track=Lucky&artist=BEYONCE&per_page=3',
+        {},
+        env,
+      );
+
+      const body = await res.json<ApiBody>();
+      expect(
+        (body.data.results as { id: number }[]).map(track => track.id),
+      ).toEqual([1]);
+      expect(requestUrl().searchParams.get('q')).toBe('Lucky BEYONCE');
+      expect(requestUrl().searchParams.get('limit')).toBe('3');
+    });
+
+    it('handles minimal tracks', async () => {
       mockDeezer(
         page([{ id: 1, title: 'Untitled', link: 'https://x/1', preview: '' }]),
       );
 
-      const res = await app.request(
-        '/music/tracks?track=Lucky&artist=Radiohead&per_page=3',
-        {},
-        env,
-      );
+      const res = await app.request('/music/tracks?track=Untitled', {}, env);
 
       const body = await res.json<ApiBody>();
       expect(body.data.results[0]).toEqual({
@@ -412,10 +484,6 @@ describe('Music handlers', () => {
         coverUrl: null,
         url: 'https://x/1',
       });
-      expect(requestUrl().searchParams.get('q')).toBe(
-        'artist:"Radiohead" track:"Lucky"',
-      );
-      expect(requestUrl().searchParams.get('limit')).toBe('3');
     });
 
     it('returns 400 when track is missing', async () => {

@@ -163,8 +163,10 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 | Endpoint | Parameters | Description |
 |---|---|---|
 | `/music/artists` | `name` (required), `page`, `per_page` (max 100) | Search artists on Deezer |
-| `/music/albums` | `title` (required), `artist`, `page`, `per_page` (max 25), `details` | Search albums on Deezer. Results include release date, genres, label and UPC, at one more request per album. `details=false` skips those requests (the fields are `null` or empty) |
-| `/music/tracks` | `track` (required), `artist`, `page`, `per_page` (max 100) | Search tracks on Deezer, with album, duration and a 30-second preview URL |
+| `/music/albums` | `title` (required), `artist`, `page`, `per_page` (max 25), `details` | Search albums on Deezer. Results include release date, genres, label and UPC, at one more request per album. `details=false` skips those requests (the fields are `null` or empty). With `artist`, only albums by that artist are kept (see below) |
+| `/music/tracks` | `track` (required), `artist`, `page`, `per_page` (max 100) | Search tracks on Deezer, with album, duration and a 30-second preview URL. With `artist`, only tracks by that artist are kept (see below) |
+
+The `artist` parameter of `/music/albums` and `/music/tracks` adds the artist to the search words, then keeps only results whose artist name contains it (case, accents and extra spaces do not matter). Deezer's own `artist:"…"` search returns no or unrelated results, so it is not used. Totals count Deezer's matches before this filter, so a page can have fewer results than `per_page`.
 
 ### Qobuz
 
@@ -313,7 +315,7 @@ All handler tests use Hono's built-in `app.request()` helper to exercise routes 
 | `src/manga/handler.test.ts` | Search, single-request details, UUID validation, 404, limit/offset options, error paths, no-cover/no-relationship edge cases |
 | `src/movies/handler.test.ts` | Query, search, by-ID, language/year options, `details=false`, 404, error paths, no-director/no-poster edge cases |
 | `src/mtg/handler.test.ts` | Card search, set/number filters, request headers, no-match (404) and rejected-query (400) responses, double-faced cards, colorless cards, newline escaping |
-| `src/music/handler.test.ts` | Artist, album, and track search, page/per_page to index/limit, artist advanced search and quote stripping, album details and `details=false`, Deezer error codes (quota, no data, busy), minimal-result edge cases, param validation |
+| `src/music/handler.test.ts` | Artist, album, and track search, page/per_page to index/limit, artist in the plain query and the artist-name filter (case, accents, details only for kept albums), album details and `details=false`, Deezer error codes (quota, no data, busy), minimal-result edge cases, param validation |
 | `src/qobuz/handler.test.ts` | Album search, store and player links, track lists (one request per album, `tracks=false`, minimal tracks), `store` region, slug and URL fallbacks, artist/limit/offset options, credentials in the request, param validation, error paths, minimal album edge case |
 | `src/pkm/handler.test.ts` | Card search, set filter, limit/page, empty results, error paths, minimal card edge case, effect-as-description |
 | `src/repos/handler.test.ts` | Search, query, `owner/repo` lookup, best-match ranking, `totalPages`, param validation, 404, error paths, no-license/no-description edge case |

@@ -57,21 +57,32 @@ const deezerFetch = async <T extends { error?: DeezerError }>(
 };
 
 /**
- * Remove double quotes, which delimit fields in Deezer's advanced search
+ * Build a plain search query. Deezer's advanced search (`artist:"…"`)
+ * returns no or unrelated results, even for its own documented example,
+ * so the artist joins the plain query and `byArtist` filters the results.
  */
-const unquote = (value: string): string => value.replaceAll('"', '').trim();
+const searchQuery = (value: string, artist?: string): string =>
+  artist ? `${value} ${artist}` : value;
+
+/** Lowercase, without accents or extra spaces, for loose name matching */
+const normalizeName = (name: string): string =>
+  name
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 
 /**
- * Build a search query. With an artist, use advanced search
- * (`artist:"…" album:"…"`) so both fields must match.
- * DOCS: https://developers.deezer.com/api/search
+ * Keep results whose artist name contains the requested artist (all results
+ * without one). Deezer's totals count matches before this filter, so a page
+ * can hold fewer results than `perPage`.
  */
-const searchQuery = (
-  field: 'album' | 'track',
-  value: string,
-  artist?: string,
-): string =>
-  artist ? `artist:"${unquote(artist)}" ${field}:"${unquote(value)}"` : value;
+const byArtist =
+  (artist?: string) =>
+  (item: { artist?: { name: string } }): boolean =>
+    !artist ||
+    normalizeName(item.artist?.name ?? '').includes(normalizeName(artist));
 
 /**
  * Issue a search request and wrap mapped results with pagination info.
@@ -147,7 +158,7 @@ const normalizeAlbum = (
 /**
  * Search for an album by title, optionally by one artist.
  * Search results have no release date, genres, label or UPC, so each album
- * costs one more request (album/{id}). With `details: false`, skips those
+ * (after the artist filter) costs one more request (album/{id}). With `details: false`, skips those
  * requests and makes 1 request instead of up to 26.
  *
  * @param title - The album title to search for
@@ -160,16 +171,18 @@ export const searchAlbum = async (
 ): Promise<PaginatedResults<AlbumSearchResult>> =>
   search<DeezerAlbum, AlbumSearchResult>(
     'album',
-    searchQuery('album', title, artist),
+    searchQuery(title, artist),
     pagination,
     albums =>
       Promise.all(
-        albums.map(async album =>
-          normalizeAlbum(
-            album,
-            details === false ? null : await getAlbumDetails(album.id),
+        albums
+          .filter(byArtist(artist))
+          .map(async album =>
+            normalizeAlbum(
+              album,
+              details === false ? null : await getAlbumDetails(album.id),
+            ),
           ),
-        ),
       ),
   );
 
@@ -186,10 +199,10 @@ export const searchTrack = async (
 ): Promise<PaginatedResults<TrackSearchResult>> =>
   search<DeezerTrack, TrackSearchResult>(
     'track',
-    searchQuery('track', track, artist),
+    searchQuery(track, artist),
     pagination,
     tracks =>
-      tracks.map(result => ({
+      tracks.filter(byArtist(artist)).map(result => ({
         id: result.id,
         title: result.title,
         artist: result.artist?.name ?? '',

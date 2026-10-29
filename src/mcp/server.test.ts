@@ -224,7 +224,7 @@ describe('MCP server', () => {
       'search_music_albums',
       { title: 'Moving Pictures', artist: 'Rush', perPage: 5, page: 2 },
       {
-        ['q']: 'artist:"Rush" album:"Moving Pictures"',
+        ['q']: 'Moving Pictures Rush',
         index: '5',
         limit: '5',
       },
