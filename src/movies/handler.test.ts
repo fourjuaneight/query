@@ -11,7 +11,6 @@ const env = {
   TMDB_KEY: 'test-key',
   TWITCH_CLIENT_ID: '',
   TWITCH_CLIENT_SECRET: '',
-  DISCOGS_TOKEN: '',
   GH_TOKEN: '',
   YOUTUBE_KEY: '',
 };

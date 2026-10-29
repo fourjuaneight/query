@@ -9,7 +9,6 @@ const env: Bindings = {
   TMDB_KEY: process.env['TMDB_KEY'] ?? '',
   TWITCH_CLIENT_ID: process.env['TWITCH_CLIENT_ID'] ?? '',
   TWITCH_CLIENT_SECRET: process.env['TWITCH_CLIENT_SECRET'] ?? '',
-  DISCOGS_TOKEN: process.env['DISCOGS_TOKEN'] ?? '',
   GH_TOKEN: process.env['GH_TOKEN'] ?? '',
   YOUTUBE_KEY: process.env['YOUTUBE_KEY'] ?? '',
   QOBUZ_APP_ID: process.env['QOBUZ_APP_ID'] ?? '',

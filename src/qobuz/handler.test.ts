@@ -11,7 +11,6 @@ const env = {
   TMDB_KEY: '',
   TWITCH_CLIENT_ID: '',
   TWITCH_CLIENT_SECRET: '',
-  DISCOGS_TOKEN: '',
   GH_TOKEN: '',
   YOUTUBE_KEY: '',
   QOBUZ_APP_ID: '123456789',

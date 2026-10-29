@@ -254,7 +254,6 @@ beforeEach(() => {
     TMDB_KEY: 'tmdb',
     TWITCH_CLIENT_ID: 'twitch-id',
     TWITCH_CLIENT_SECRET: 'twitch-secret',
-    DISCOGS_TOKEN: 'discogs',
     GH_TOKEN: 'gh',
     YOUTUBE_KEY: 'yt',
     QOBUZ_APP_ID: 'qobuz-app',

@@ -1,7 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 
-import type { Bindings } from '../common/typings';
 import {
   READ_ONLY,
   int,
@@ -10,31 +9,33 @@ import {
   runTool,
   text,
 } from '../mcp/helpers';
-import { searchAlbum, searchArtist, searchTrack } from './discogs';
+import {
+  MAX_ALBUMS_PER_PAGE,
+  searchAlbum,
+  searchArtist,
+  searchTrack,
+} from './deezer';
 
-const pagination = {
-  page: page(),
-  perPage: int('Results per page (default 10)', { max: 100 }),
-};
+const perPage = (max: number): z.ZodOptional<z.ZodNumber> =>
+  int('Results per page (default 10)', { max });
 
-const filters = {
-  artist: optionalText('Artist name to filter by'),
-  year: optionalText('Release year to filter by (e.g. "1977")'),
-  genre: optionalText('Genre to filter by (e.g. "Rock")'),
-};
+const artist = optionalText('Artist name to filter by');
 
-export const registerMusicTools = (server: McpServer, env: Bindings): void => {
+export const registerMusicTools = (server: McpServer): void => {
   server.registerTool(
     'search_music_artists',
     {
       title: 'Search music artists',
       description:
-        'Search Discogs for music artists by name. Returns a page of matching artists.',
-      inputSchema: z.object({ name: text('Artist name'), ...pagination }),
+        'Search Deezer for music artists by name. Returns a page of matching artists.',
+      inputSchema: z.object({
+        name: text('Artist name'),
+        page: page(),
+        perPage: perPage(100),
+      }),
       annotations: READ_ONLY,
     },
-    ({ name, ...options }) =>
-      runTool(() => searchArtist(env.DISCOGS_TOKEN, name, options)),
+    ({ name, ...options }) => runTool(() => searchArtist(name, options)),
   );
 
   server.registerTool(
@@ -42,16 +43,22 @@ export const registerMusicTools = (server: McpServer, env: Bindings): void => {
     {
       title: 'Search music albums',
       description:
-        'Search Discogs for albums (releases) by title. Returns a page of matching albums.',
+        'Search Deezer for albums by title. Returns a page of matching albums with release date, genres, label and UPC.',
       inputSchema: z.object({
         title: text('Album title'),
-        ...filters,
-        ...pagination,
+        artist,
+        page: page(),
+        perPage: perPage(MAX_ALBUMS_PER_PAGE),
+        details: z
+          .boolean()
+          .optional()
+          .describe(
+            'Fetch release date, genres, label and UPC for every album (default true)',
+          ),
       }),
       annotations: READ_ONLY,
     },
-    ({ title, ...options }) =>
-      runTool(() => searchAlbum(env.DISCOGS_TOKEN, title, options)),
+    ({ title, ...options }) => runTool(() => searchAlbum(title, options)),
   );
 
   server.registerTool(
@@ -59,15 +66,15 @@ export const registerMusicTools = (server: McpServer, env: Bindings): void => {
     {
       title: 'Search music tracks',
       description:
-        'Search Discogs for releases that contain a track title. Returns a page of matching tracks.',
+        'Search Deezer for tracks by title. Returns a page of matching tracks with their album.',
       inputSchema: z.object({
         track: text('Track title'),
-        ...filters,
-        ...pagination,
+        artist,
+        page: page(),
+        perPage: perPage(100),
       }),
       annotations: READ_ONLY,
     },
-    ({ track, ...options }) =>
-      runTool(() => searchTrack(env.DISCOGS_TOKEN, track, options)),
+    ({ track, ...options }) => runTool(() => searchTrack(track, options)),
   );
 };

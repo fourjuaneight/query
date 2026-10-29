@@ -5,7 +5,6 @@ export interface Bindings {
   TMDB_KEY: string;
   TWITCH_CLIENT_ID: string;
   TWITCH_CLIENT_SECRET: string;
-  DISCOGS_TOKEN: string;
   GH_TOKEN: string;
   YOUTUBE_KEY: string;
   QOBUZ_APP_ID: string;

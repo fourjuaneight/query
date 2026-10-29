@@ -47,7 +47,7 @@ Links to the upstream API documentation for every integrated service:
 | MangaDex (Manga) | [API Reference](https://api.mangadex.org/docs/redoc.html) |
 | TMDB (Movies & TV) | [API Docs](https://developer.themoviedb.org/docs) |
 | Scryfall (MTG) | [API Reference](https://scryfall.com/docs/api) · [Search Syntax](https://scryfall.com/docs/syntax) |
-| Discogs (Music) | [API Docs](https://www.discogs.com/developers) |
+| Deezer (Music) | [API Docs](https://developers.deezer.com/api) · [Search Syntax](https://developers.deezer.com/api/search) |
 | Qobuz (Albums) | No official public docs. See the community [OpenAPI profile](https://github.com/api-evangelist/qobuz) and [streamrip](https://github.com/nathom/streamrip) |
 | TCGdex (Pokémon TCG) | [API Reference](https://tcgdex.dev/reference/card) |
 | GitHub (Repos) | [REST API](https://docs.github.com/en/rest) |
@@ -62,13 +62,16 @@ The following environment variables must be set. Configure them as [Wrangler sec
 | `TMDB_KEY` | TMDB (Movies & TV Shows) | [TMDB API Settings](https://www.themoviedb.org/settings/api) |
 | `TWITCH_CLIENT_ID` | IGDB (Games) | [Twitch Developer Console](https://dev.twitch.tv/console/apps) |
 | `TWITCH_CLIENT_SECRET` | IGDB (Games) | [Twitch OAuth Client Credentials](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow) |
-| `DISCOGS_TOKEN` | Discogs (Music) | [Discogs Developer Settings](https://www.discogs.com/settings/developers) |
 | `GH_TOKEN` | GitHub (Repos) | [GitHub Personal Access Tokens](https://github.com/settings/tokens) |
 | `YOUTUBE_KEY` | YouTube | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
 | `QOBUZ_APP_ID` | Qobuz | The web player's app ID (see [Qobuz credentials](#qobuz-credentials)) |
 | `QOBUZ_USER_AUTH_TOKEN` | Qobuz | Your account's user auth token (see [Qobuz credentials](#qobuz-credentials)) |
 
-> **Note:** OpenLibrary, MangaDex, Scryfall, and TCGdex do not require authentication tokens.
+> **Note:** OpenLibrary, MangaDex, Scryfall, TCGdex, and Deezer do not require authentication tokens.
+
+### Deezer rate limits
+
+Deezer counts requests per source IP address (about 50 requests per 5 seconds). A Worker sends requests from Cloudflare's IP addresses, which other callers can share, so a busy address can still get `429 Deezer: rate limit exceeded`. Music used Discogs before: Discogs allows only 60 requests per minute per IP address, and a test on Cloudflare's network found that budget already used by other callers. Album search uses one request per album for its details; use `details=false` to send one request only.
 
 ### Qobuz credentials
 
@@ -159,9 +162,9 @@ All endpoints accept `GET` requests with query parameters. Below is the full rou
 
 | Endpoint | Parameters | Description |
 |---|---|---|
-| `/music/artists` | `name` (required), `page`, `per_page` (max 100) | Search artists on Discogs |
-| `/music/albums` | `title` (required), `artist`, `year`, `genre`, `page`, `per_page` (max 100) | Search albums |
-| `/music/tracks` | `track` (required), `artist`, `year`, `genre`, `page`, `per_page` (max 100) | Search tracks |
+| `/music/artists` | `name` (required), `page`, `per_page` (max 100) | Search artists on Deezer |
+| `/music/albums` | `title` (required), `artist`, `page`, `per_page` (max 25), `details` | Search albums on Deezer. Results include release date, genres, label and UPC, at one more request per album. `details=false` skips those requests (the fields are `null` or empty) |
+| `/music/tracks` | `track` (required), `artist`, `page`, `per_page` (max 100) | Search tracks on Deezer, with album, duration and a 30-second preview URL |
 
 ### Qobuz
 
@@ -264,7 +267,6 @@ CI only deploys; it does not upload secrets. Set each secret once in the Cloudfl
 wrangler secret put TMDB_KEY
 wrangler secret put TWITCH_CLIENT_ID
 wrangler secret put TWITCH_CLIENT_SECRET
-wrangler secret put DISCOGS_TOKEN
 wrangler secret put GH_TOKEN
 wrangler secret put YOUTUBE_KEY
 wrangler secret put QOBUZ_APP_ID
@@ -311,7 +313,7 @@ All handler tests use Hono's built-in `app.request()` helper to exercise routes 
 | `src/manga/handler.test.ts` | Search, single-request details, UUID validation, 404, limit/offset options, error paths, no-cover/no-relationship edge cases |
 | `src/movies/handler.test.ts` | Query, search, by-ID, language/year options, `details=false`, 404, error paths, no-director/no-poster edge cases |
 | `src/mtg/handler.test.ts` | Card search, set/number filters, request headers, no-match (404) and rejected-query (400) responses, double-faced cards, colorless cards, newline escaping |
-| `src/music/handler.test.ts` | Artist, album, and track search, pagination/filter options, error paths |
+| `src/music/handler.test.ts` | Artist, album, and track search, page/per_page to index/limit, artist advanced search and quote stripping, album details and `details=false`, Deezer error codes (quota, no data, busy), minimal-result edge cases, param validation |
 | `src/qobuz/handler.test.ts` | Album search, store and player links, track lists (one request per album, `tracks=false`, minimal tracks), `store` region, slug and URL fallbacks, artist/limit/offset options, credentials in the request, param validation, error paths, minimal album edge case |
 | `src/pkm/handler.test.ts` | Card search, set filter, limit/page, empty results, error paths, minimal card edge case, effect-as-description |
 | `src/repos/handler.test.ts` | Search, query, `owner/repo` lookup, best-match ranking, `totalPages`, param validation, 404, error paths, no-license/no-description edge case |

@@ -129,14 +129,17 @@ curl "http://localhost:8787/music/artists?name=Daft+Punk&page=1&per_page=5"
 # Search albums
 curl "http://localhost:8787/music/albums?title=OK+Computer"
 
-# Search albums with optional filters
-curl "http://localhost:8787/music/albums?title=Random+Access+Memories&artist=Daft+Punk&year=2013&page=1&per_page=5"
+# Search albums by artist, with pagination
+curl "http://localhost:8787/music/albums?title=Random+Access+Memories&artist=Daft+Punk&page=1&per_page=5"
+
+# Search albums without details (one request instead of one per album)
+curl "http://localhost:8787/music/albums?title=OK+Computer&details=false"
 
 # Search tracks
 curl "http://localhost:8787/music/tracks?track=Paranoid+Android"
 
-# Search tracks with optional filters
-curl "http://localhost:8787/music/tracks?track=Lucky&artist=Daft+Punk&year=2013&page=1&per_page=5"
+# Search tracks by artist, with pagination
+curl "http://localhost:8787/music/tracks?track=Lucky&artist=Daft+Punk&page=1&per_page=5"
 ```
 
 ## Qobuz

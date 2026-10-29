@@ -2,22 +2,25 @@ import type { Context } from 'hono';
 
 import type { AppEnv } from '../common/typings';
 import { jsonSuccess } from '../common/helpers';
-import { intQuery, optionalQuery, requireQuery } from '../common/params';
-import { searchArtist, searchAlbum, searchTrack } from './discogs';
+import {
+  boolQuery,
+  intQuery,
+  optionalQuery,
+  requireQuery,
+} from '../common/params';
+import {
+  MAX_ALBUMS_PER_PAGE,
+  searchAlbum,
+  searchArtist,
+  searchTrack,
+} from './deezer';
 
 const pagination = (
   ctx: Context<AppEnv>,
+  maxPerPage = 100,
 ): { page?: number; perPage?: number } => ({
   page: intQuery(ctx, 'page'),
-  perPage: intQuery(ctx, 'per_page', { max: 100 }),
-});
-
-const filters = (
-  ctx: Context<AppEnv>,
-): { artist?: string; year?: string; genre?: string } => ({
-  artist: optionalQuery(ctx, 'artist'),
-  year: optionalQuery(ctx, 'year'),
-  genre: optionalQuery(ctx, 'genre'),
+  perPage: intQuery(ctx, 'per_page', { max: maxPerPage }),
 });
 
 export const handleArtistSearch = async (
@@ -25,11 +28,7 @@ export const handleArtistSearch = async (
 ): Promise<Response> => {
   const name = requireQuery(ctx, 'name');
 
-  const results = await searchArtist(
-    ctx.env.DISCOGS_TOKEN,
-    name,
-    pagination(ctx),
-  );
+  const results = await searchArtist(name, pagination(ctx));
   return jsonSuccess(ctx, results);
 };
 
@@ -38,9 +37,10 @@ export const handleAlbumSearch = async (
 ): Promise<Response> => {
   const title = requireQuery(ctx, 'title');
 
-  const results = await searchAlbum(ctx.env.DISCOGS_TOKEN, title, {
-    ...filters(ctx),
-    ...pagination(ctx),
+  const results = await searchAlbum(title, {
+    artist: optionalQuery(ctx, 'artist'),
+    details: boolQuery(ctx, 'details'),
+    ...pagination(ctx, MAX_ALBUMS_PER_PAGE),
   });
   return jsonSuccess(ctx, results);
 };
@@ -50,8 +50,8 @@ export const handleTrackSearch = async (
 ): Promise<Response> => {
   const track = requireQuery(ctx, 'track');
 
-  const results = await searchTrack(ctx.env.DISCOGS_TOKEN, track, {
-    ...filters(ctx),
+  const results = await searchTrack(track, {
+    artist: optionalQuery(ctx, 'artist'),
     ...pagination(ctx),
   });
   return jsonSuccess(ctx, results);

@@ -39,7 +39,7 @@ export const createMcpServer = (env: Bindings): McpServer => {
   registerTVShowTools(server, env);
   registerMTGTools(server);
   registerPKMTools(server);
-  registerMusicTools(server, env);
+  registerMusicTools(server);
   registerQobuzTools(server, env);
   registerRepoTools(server, env);
   registerYouTubeTools(server, env);
