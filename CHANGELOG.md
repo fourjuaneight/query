@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2] - 2026-10-29
+
+### Bug Fixes
+
+- [Filter music search by artist name, not Deezer's artist query.](https://github.com/fourjuaneight/query/commit/bde8e430aa196e771eaa348539eee60192b0072d)
+
+### Features
+
+- [**breaking**] [Replace Discogs with Deezer for music search.](https://github.com/fourjuaneight/query/commit/48aebe315cf4b8eab22b9eadae83f57fb8c176f4)
+
+### Miscellaneous Tasks
+
+- [Update Changelog.](https://github.com/fourjuaneight/query/commit/a4424775e18c9b0f84f529b32e2125ef8d611e44)
+
 ## [2.1.1] - 2026-10-28
 
 ### Features
